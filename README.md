@@ -66,7 +66,21 @@ Open:
 http://localhost:3000
 ```
 
-## Gemini Configuration
+## No-Paid Gemini Mode
+
+Firebase Functions secrets require the Firebase Blaze plan. If you are staying on the free Spark plan, use the GitHub Pages frontend directly.
+
+Open the hosted site and paste a Gemini API key into the `Free Gemini Browser Mode` field. The key is stored only in that browser's `localStorage`; it is not committed to this repository. Restrict the key in Google AI Studio or Google Cloud API key settings to the GitHub Pages referrer:
+
+```text
+https://rachith183.github.io/dual-persona-simulator/*
+```
+
+If no key is saved, the simulator uses an offline Aoi-style structured fallback so the UI, animations, TTS, STT, quiz buttons, and economy counters still work.
+
+Browser-only scan mode can read text-like files such as `.txt`, `.md`, `.csv`, and `.json`. PDF and DOCX parsing still need a server-side parser later.
+
+## Gemini Backend Configuration
 
 Set a Gemini API key before starting the backend:
 
@@ -81,7 +95,7 @@ $env:GEMINI_API_KEY="your_key_here"
 npm start
 ```
 
-The backend uses `gemini-1.5-pro` and enforces a structured JSON response with:
+The optional Node/Firebase backend uses `gemini-1.5-pro` and enforces a structured JSON response with:
 
 - `character_dialogue`
 - `internal_thinking_state`
@@ -98,4 +112,4 @@ Recommended hosting options:
 - Firebase Hosting for `frontend/` plus Firebase Cloud Functions or Cloud Run for `backend/server.js`.
 - GitHub Pages for `frontend/` plus Firebase Cloud Functions, Cloud Run, Render, Railway, or another Node runtime for the backend.
 
-Firebase is enough for the full product when it includes Hosting plus Functions or Cloud Run. Firebase Hosting by itself is not enough for the Gemini backend because browser-side API keys would be exposed.
+Firebase is enough for the full product when it includes Hosting plus Functions or Cloud Run, but Functions and secret storage require Blaze. Firebase Hosting by itself is not enough for the protected Gemini backend because browser-side API keys would be exposed.

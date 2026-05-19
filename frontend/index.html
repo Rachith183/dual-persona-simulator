@@ -71,6 +71,10 @@
         </article>
 
         <aside class="scan-upload-panel" aria-label="Academic scan upload">
+          <label class="scan-label" for="gemini-api-key-input">Free Gemini Browser Mode</label>
+          <input class="scan-file-input" id="gemini-api-key-input" type="password" autocomplete="off" placeholder="Paste Gemini API key for this browser">
+          <button class="scan-submit" id="save-api-key-btn" type="button">Save Key</button>
+          <p class="scan-status api-key-status" aria-live="polite">No browser key saved. Offline mode is active.</p>
           <label class="scan-label" for="scan-file">Academic Scanner</label>
           <input class="scan-file-input" id="scan-file" name="document" type="file" accept=".pdf,.txt,.md,.doc,.docx,.png,.jpg,.jpeg">
           <button class="scan-submit" type="button">Scan Document</button>

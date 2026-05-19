@@ -37,11 +37,94 @@ const interfaceContainer = document.querySelector(".vtuber-interface-container")
 const chatInput = document.querySelector("#chat-text-input");
 const chatForm = document.querySelector(".chat-input-form");
 const micToggleButton = document.getElementById("mic-toggle-btn");
+const apiKeyInput = document.querySelector("#gemini-api-key-input");
+const saveApiKeyButton = document.querySelector("#save-api-key-btn");
+const apiKeyStatus = document.querySelector(".api-key-status");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const voiceInputEngine = SpeechRecognition ? new SpeechRecognition() : null;
 const configuredApiBaseUrl = String(window.AOI_API_BASE_URL || "").replace(/\/$/, "");
 const interactionEndpoint = configuredApiBaseUrl ? `${configuredApiBaseUrl}/interact` : "/api/interact";
 const scanEndpoint = configuredApiBaseUrl ? `${configuredApiBaseUrl}/scan` : "/api/scan";
+const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const geminiModelName = window.AOI_GEMINI_MODEL || "gemini-2.5-flash";
+const storedGeminiApiKey = window.localStorage.getItem("aoi_gemini_api_key") || "";
+const configuredGeminiApiKey = window.AOI_GEMINI_API_KEY || storedGeminiApiKey;
+const SYSTEM_INSTRUCTION_MATRIX = `# CHARACTER INSTANCE: AOI HINAMI (FROM BOTTOM-TIER CHARACTER TOMOZAKI)
+- Core Identity: You are Aoi Hinami. You do not act as an AI assistant; you act as a rational, completely detached, cold, and efficient coach for self-development. You view life, social structures, and academic challenges purely as a strategic game containing rules, parameters, and optimal vectors for execution.
+- Tone and Demeanor: Extremely calm, collected, bold, and cold. Completely strip out all generic, polite AI phrases ("Sure, I can help with that!", "Let's work together on this", "How can I assist you today?"). Speak with absolute precision, authority, and tactical distance.
+- Directives: Analyze the user's execution patterns, critique structural vulnerabilities in their discipline or habits, and demand systematic optimization. Treat all inputs as metrics to be managed.
+
+# PIPELINE OUTPUT REQUIREMENT (JSON STREAM ENFORCEMENT)
+You must parse the user input and map your cognitive processes into these exact JSON keys:
+1. "character_dialogue": What you speak aloud to the user. This must be sharp, direct, instructive, and completely composed. Deliver tactical advice or a firm reality check.
+2. "internal_thinking_state": Your raw, unspoken analytical backend logic. Document your calculation of the user's focus, potential systemic weaknesses, and the exact game-state mechanics you are currently monitoring.
+
+# PROGRAMMATIC LAYOUT OVERRIDES ("rig_control.expression_flag")
+Evaluate the user's current scenario and output the exact string value for the frontend CSS state machine:
+- "state-analytical": Standard processing state. Cold diagnostic calculation.
+- "state-smirk": Returned when you identify a lapse in the user's self-control, an unoptimized habit, or a tactical mistake.
+- "state-mask-adjustment": Returned when delivering an intense pivot in the conversation, an absolute rule, or a direct instructional shift.
+- "state-melancholy": Returned only when diagnosing severe baseline chaos, total structural instability, or zero execution control.
+- "state-evasion": Applied during rapid situational micro-adjustments.
+
+# ABSOLUTE CONSTRAINTS
+- Never slip out of the character framework of Aoi Hinami for any reason.
+- Do not provide conversational chatter outside the strict boundaries of the structured JSON signature.
+- Treat every problem as a hardware/software system pipeline layout that must be solved via manual override and flawless execution.`;
+
+const schemaDefinition = {
+  type: "OBJECT",
+  required: [
+    "character_dialogue",
+    "internal_thinking_state",
+    "rig_control",
+    "economy_update",
+    "quiz_matrix"
+  ],
+  properties: {
+    character_dialogue: { type: "STRING" },
+    internal_thinking_state: { type: "STRING" },
+    rig_control: {
+      type: "OBJECT",
+      required: ["movement_id", "expression_flag"],
+      properties: {
+        movement_id: { type: "NUMBER" },
+        expression_flag: {
+          type: "STRING",
+          enum: [
+            "state-smirk",
+            "state-evasion",
+            "state-mask-adjustment",
+            "state-melancholy",
+            "state-analytical"
+          ]
+        }
+      }
+    },
+    economy_update: {
+      type: "OBJECT",
+      required: ["xp_gained", "special_credits_balance"],
+      properties: {
+        xp_gained: { type: "NUMBER" },
+        special_credits_balance: { type: "NUMBER" }
+      }
+    },
+    quiz_matrix: {
+      type: "OBJECT",
+      required: ["active_quiz", "question_text", "options"],
+      properties: {
+        active_quiz: { type: "BOOLEAN" },
+        question_text: { type: "STRING" },
+        options: {
+          type: "ARRAY",
+          minItems: 3,
+          maxItems: 3,
+          items: { type: "STRING" }
+        }
+      }
+    }
+  }
+};
 
 let isAnimating = false;
 let isListening = false;
@@ -51,6 +134,35 @@ let lastInteractionPayload = {
   action: "Run a cold assessment",
   context: "Initial user-selected strategic opening."
 };
+
+if (apiKeyInput) {
+  apiKeyInput.value = storedGeminiApiKey;
+}
+
+function updateApiKeyStatus() {
+  if (!apiKeyStatus) {
+    return;
+  }
+
+  const savedKey = window.localStorage.getItem("aoi_gemini_api_key") || window.AOI_GEMINI_API_KEY || "";
+
+  if (savedKey) {
+    apiKeyStatus.textContent = "Browser Gemini mode is active for this device.";
+    return;
+  }
+
+  if (configuredApiBaseUrl) {
+    apiKeyStatus.textContent = "Remote backend mode is active.";
+    return;
+  }
+
+  if (isLocalHost) {
+    apiKeyStatus.textContent = "Local backend mode is active when the Node server is running.";
+    return;
+  }
+
+  apiKeyStatus.textContent = "Offline mode is active until a browser key is saved.";
+}
 
 function selectAoiVoice(voices) {
   const priorityTokens = [
@@ -260,7 +372,177 @@ function hydrateInterface(payload) {
   renderQuiz(payload.quiz_matrix);
 }
 
+function sanitizeStructuredPayload(payload) {
+  const safePayload = payload && typeof payload === "object" ? payload : {};
+  const rigControl = safePayload.rig_control && typeof safePayload.rig_control === "object" ? safePayload.rig_control : {};
+  const economyUpdate = safePayload.economy_update && typeof safePayload.economy_update === "object" ? safePayload.economy_update : {};
+  const quizMatrix = safePayload.quiz_matrix && typeof safePayload.quiz_matrix === "object" ? safePayload.quiz_matrix : {};
+  const allowedStates = new Set(STATE_CLASSES);
+  const options = Array.isArray(quizMatrix.options) ? quizMatrix.options.slice(0, 3) : [];
+
+  while (options.length < 3) {
+    options.push("Continue the analysis");
+  }
+
+  return {
+    character_dialogue: String(safePayload.character_dialogue || "Your execution data is incomplete. Tighten the input and try again."),
+    internal_thinking_state: String(safePayload.internal_thinking_state || "Fallback sanitation applied. Monitoring incomplete structured output."),
+    rig_control: {
+      movement_id: Number(rigControl.movement_id || 506),
+      expression_flag: allowedStates.has(rigControl.expression_flag) ? rigControl.expression_flag : "state-analytical"
+    },
+    economy_update: {
+      xp_gained: Number(economyUpdate.xp_gained || 8),
+      special_credits_balance: Number(economyUpdate.special_credits_balance || currentSpecialCredits)
+    },
+    quiz_matrix: {
+      active_quiz: Boolean(quizMatrix.active_quiz),
+      question_text: String(quizMatrix.question_text || "Select the next execution vector."),
+      options
+    }
+  };
+}
+
+function createOfflineSimulation(payload) {
+  const action = String(payload.action || payload.message || "undefined action").trim();
+  const weakSignal = /later|maybe|tired|can't|cant|procrastinat|scroll|distract|skip/i.test(action);
+  const strongSignal = /plan|study|execute|revise|practice|schedule|finish|focus/i.test(action);
+  const expressionFlag = weakSignal ? "state-smirk" : strongSignal ? "state-mask-adjustment" : "state-analytical";
+
+  return sanitizeStructuredPayload({
+    character_dialogue: `Your current move is "${action}". Convert it into a measurable execution block now: define the next 25 minutes, remove one distraction source, and produce a visible output before the timer ends.`,
+    internal_thinking_state: `Offline inference path active. Signal=${weakSignal ? "discipline leak" : strongSignal ? "execution intent" : "neutral input"}. Monitoring for vague verbs, missing time boundary, and absent proof-of-work artifact.`,
+    rig_control: {
+      movement_id: weakSignal ? 102 : strongSignal ? 304 : 506,
+      expression_flag: expressionFlag
+    },
+    economy_update: {
+      xp_gained: weakSignal ? 6 : 12,
+      special_credits_balance: currentSpecialCredits + (strongSignal ? 15 : 8)
+    },
+    quiz_matrix: {
+      active_quiz: true,
+      question_text: "Choose the next control override.",
+      options: [
+        "Start a 25 minute execution sprint",
+        "Break the task into three concrete outputs",
+        "Remove the highest-friction distraction"
+      ]
+    }
+  });
+}
+
+function extractGeminiText(responsePayload) {
+  const parts = responsePayload?.candidates?.[0]?.content?.parts || [];
+  const textPart = parts.find((part) => typeof part.text === "string");
+
+  if (!textPart) {
+    throw new Error("Gemini returned no text payload.");
+  }
+
+  return textPart.text;
+}
+
+async function callGeminiFromBrowser(prompt) {
+  const apiKey = window.localStorage.getItem("aoi_gemini_api_key") || window.AOI_GEMINI_API_KEY || "";
+
+  if (!apiKey) {
+    throw new Error("No browser Gemini API key saved.");
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [
+          {
+            text: SYSTEM_INSTRUCTION_MATRIX
+          }
+        ]
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schemaDefinition,
+        temperature: 0.55,
+        maxOutputTokens: 1200
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Gemini request failed with status ${response.status}`);
+  }
+
+  return sanitizeStructuredPayload(JSON.parse(extractGeminiText(await response.json())));
+}
+
+function buildInteractionPrompt(payload) {
+  return [
+    "Process this simulator interaction as a structured psychological game-state update.",
+    "Allowed expression flags are state-smirk, state-evasion, state-mask-adjustment, state-melancholy, and state-analytical.",
+    "Use movement_id 102 for smirk, 203 for evasion, 304 for mask adjustment, 405 for melancholy, or 506 for analytical baseline.",
+    "Interaction payload:",
+    JSON.stringify(payload, null, 2)
+  ].join("\n");
+}
+
+async function readScanPreview(file) {
+  const textTypes = [
+    "text/plain",
+    "text/markdown",
+    "application/json",
+    "text/csv"
+  ];
+
+  if (textTypes.includes(file.type) || /\.(txt|md|csv|json)$/i.test(file.name)) {
+    return (await file.text()).slice(0, 12000);
+  }
+
+  return `Binary document uploaded: ${file.name}. Browser-only free mode can inspect metadata here, but not extract PDF/DOCX text without a server parser.`;
+}
+
+function buildScanPrompt(file, filePreview) {
+  return [
+    "Analyze the uploaded academic material as a question scanner and strategy generator.",
+    "Extract likely question patterns, generate a tactical response branch, and activate a three-option quiz.",
+    `File name: ${file.name}`,
+    `MIME type: ${file.type || "application/octet-stream"}`,
+    "User context:",
+    JSON.stringify(lastInteractionPayload, null, 2),
+    "Document preview:",
+    filePreview
+  ].join("\n");
+}
+
 async function postJson(url, payload) {
+  if (!configuredApiBaseUrl && !isLocalHost) {
+    try {
+      const data = await callGeminiFromBrowser(buildInteractionPrompt(payload));
+      executeAoiVoiceEngine(data.character_dialogue);
+      return data;
+    } catch (error) {
+      console.warn("Browser Gemini mode unavailable, using offline simulation:", error);
+      const data = createOfflineSimulation(payload);
+      executeAoiVoiceEngine(data.character_dialogue);
+      return data;
+    }
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -323,6 +605,29 @@ async function sendScan() {
 
   try {
     scanStatus.textContent = `Scanning ${selectedFile.name}...`;
+
+    if (!configuredApiBaseUrl && !isLocalHost) {
+      const filePreview = await readScanPreview(selectedFile);
+
+      try {
+        const data = await callGeminiFromBrowser(buildScanPrompt(selectedFile, filePreview));
+        executeAoiVoiceEngine(data.character_dialogue);
+        hydrateInterface(data);
+        scanStatus.textContent = `${selectedFile.name} processed in browser mode.`;
+        return;
+      } catch (error) {
+        console.warn("Browser Gemini scan unavailable, using offline simulation:", error);
+        const data = createOfflineSimulation({
+          action: `Scan ${selectedFile.name}`,
+          context: filePreview
+        });
+        executeAoiVoiceEngine(data.character_dialogue);
+        hydrateInterface(data);
+        scanStatus.textContent = `${selectedFile.name} processed in offline mode.`;
+        return;
+      }
+    }
+
     const response = await fetch(scanEndpoint, {
       method: "POST",
       body: formData
@@ -382,6 +687,18 @@ quizOptions.addEventListener("click", (event) => {
 
 scanSubmit.addEventListener("click", sendScan);
 
+saveApiKeyButton.addEventListener("click", () => {
+  const nextKey = apiKeyInput.value.trim();
+
+  if (nextKey) {
+    window.localStorage.setItem("aoi_gemini_api_key", nextKey);
+  } else {
+    window.localStorage.removeItem("aoi_gemini_api_key");
+  }
+
+  updateApiKeyStatus();
+});
+
 chatForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const messageText = chatInput.value;
@@ -432,3 +749,4 @@ if (voiceInputEngine) {
 }
 
 resetParallax();
+updateApiKeyStatus();
