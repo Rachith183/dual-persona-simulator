@@ -1,0 +1,23 @@
+{
+  "name": "the-s-tier-move-dual-persona-simulator",
+  "version": "1.0.0",
+  "description": "A gamified VTuber-style 2.5D psychological simulation interface with a structured Gemini backend.",
+  "type": "module",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "prepare:pages": "node scripts/prepare-pages.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "firebase-functions": "^7.2.5",
+    "multer": "^2.1.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
