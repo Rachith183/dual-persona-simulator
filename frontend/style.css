@@ -107,7 +107,7 @@ input {
   accent-color: var(--analytical-cyan);
 }
 
-.simulator-stage {
+.character-build-stage {
   display: grid;
   place-items: center;
   min-height: 0;
@@ -122,6 +122,7 @@ input {
   background: #06070d;
   box-shadow: var(--shadow-cyan), inset 0 0 44px rgba(0, 243, 255, 0.12);
   transform: translate3d(0, 0, 0);
+  transition: transform 220ms ease, filter 220ms ease, box-shadow 220ms ease;
   perspective: 1100px;
   isolation: isolate;
 }
@@ -210,37 +211,6 @@ input {
   z-index: 11;
 }
 
-.hitbox {
-  position: absolute;
-  z-index: 45;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  cursor: crosshair;
-  transform: translate3d(0, 0, 0);
-}
-
-.hitbox:focus-visible {
-  outline: 2px solid var(--crimson-counter);
-  outline-offset: 2px;
-}
-
-.hitbox-head {
-  left: 33%;
-  top: 12%;
-  width: 34%;
-  height: 31%;
-  border-radius: 50%;
-}
-
-.hitbox-chest {
-  left: 28%;
-  top: 48%;
-  width: 44%;
-  height: 28%;
-  border-radius: 38% 38% 18% 18%;
-}
-
 @keyframes breathing {
   0%,
   100% {
@@ -250,6 +220,29 @@ input {
   50% {
     transform: translate3d(var(--tx, 0px), calc(var(--ty, 0px) - 2px), 0) rotate(var(--rot, 0deg)) scaleY(1.015);
   }
+}
+
+.character-viewport.state-analytical {
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: saturate(1);
+}
+
+.character-viewport.state-smirk {
+  transform: translate3d(0, -4px, 0) scale(1.02);
+  filter: contrast(1.08) saturate(1.05);
+  box-shadow: var(--shadow-red), inset 0 0 44px rgba(255, 0, 85, 0.12);
+}
+
+.character-viewport.state-mask-adjustment {
+  transform: translate3d(0, 0, 0) rotate(-1.5deg) scale(1.05);
+  filter: contrast(1.08);
+  box-shadow: 0 0 28px rgba(0, 243, 255, 0.34), inset 0 0 44px rgba(0, 243, 255, 0.16);
+}
+
+.character-viewport.state-melancholy {
+  transform: translate3d(0, 6px, 0) scale(0.99);
+  filter: saturate(0.85) brightness(0.92);
+  box-shadow: 0 0 18px rgba(255, 0, 85, 0.20), inset 0 0 44px rgba(255, 0, 85, 0.12);
 }
 
 .state-smirk .layer-mouth {
@@ -269,23 +262,6 @@ input {
   --tx: 2px;
   --ty: 1px;
   --rot: 2deg;
-}
-
-.state-evasion .layer-face-base,
-.state-evasion .layer-mouth,
-.state-evasion .layer-left-eye,
-.state-evasion .layer-right-eye {
-  --tx: -8px;
-  --ty: 1px;
-  --rot: -1.5deg;
-}
-
-.state-evasion .layer-left-strand,
-.state-evasion .layer-right-strand,
-.state-evasion .layer-bangs {
-  --tx: -12px;
-  --ty: 2px;
-  --rot: -2deg;
 }
 
 .state-mask-adjustment .layer-bangs {
@@ -383,28 +359,31 @@ input {
   color: var(--text-muted);
 }
 
-.quiz-container {
+.goals-hierarchy-container {
   min-width: 0;
   border-left: 1px solid rgba(0, 243, 255, 0.28);
   padding: 16px;
   background: rgba(255, 255, 255, 0.035);
 }
 
-.quiz-question {
-  margin: 0 0 12px;
+.session-stage-state {
+  margin: 8px 0 16px;
+  color: var(--crimson-counter);
+  font-weight: 900;
+}
+
+.goal-list {
+  min-height: 44px;
+  margin: 8px 0 14px;
+  padding-left: 18px;
   color: var(--text-primary);
-  font-weight: 800;
+  line-height: 1.45;
 }
 
-.quiz-options {
-  display: grid;
-  gap: 10px;
-}
-
-.quiz-option,
 .scan-submit,
 .chat-submit,
-.mic-toggle-btn {
+.mic-toggle-btn,
+.reward-purchase-button {
   min-height: 42px;
   border: 1px solid var(--line-cyan);
   background: rgba(0, 243, 255, 0.08);
@@ -414,11 +393,11 @@ input {
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
-.quiz-option:hover,
 .scan-submit:hover,
 .chat-submit:hover,
 .mic-toggle-btn:hover,
-.mic-toggle-btn[aria-pressed="true"] {
+.mic-toggle-btn[aria-pressed="true"],
+.reward-purchase-button:hover {
   border-color: var(--crimson-counter);
   background: rgba(255, 0, 85, 0.12);
   transform: translate3d(0, -1px, 0);
@@ -468,6 +447,65 @@ input {
   line-height: 1.45;
 }
 
+.execution-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.time-blocks-container,
+.active-quests-container,
+.rewards-shop-container {
+  min-height: 160px;
+  border: 1px solid var(--line-cyan);
+  background: var(--panel-soft);
+  box-shadow: var(--shadow-cyan);
+  padding: 16px;
+}
+
+.time-blocks-list,
+.active-quests-list,
+.rewards-shop-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.time-block-card,
+.quest-card {
+  border: 1px solid rgba(0, 243, 255, 0.26);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+}
+
+.dashboard-card-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.dashboard-card-line,
+.empty-state {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.countdown-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  min-height: 34px;
+  margin-top: 6px;
+  border: 1px solid var(--line-red);
+  color: var(--crimson-counter);
+  font-weight: 900;
+}
+
 @media (max-width: 860px) {
   .vtuber-interface-container {
     grid-template-rows: auto auto auto;
@@ -476,7 +514,8 @@ input {
 
   .hud-overlay,
   .control-deck,
-  .dialogue-terminal {
+  .dialogue-terminal,
+  .execution-dashboard {
     grid-template-columns: 1fr;
   }
 
@@ -484,7 +523,7 @@ input {
     width: min(96vw, 620px);
   }
 
-  .quiz-container {
+  .goals-hierarchy-container {
     border-left: 0;
     border-top: 1px solid rgba(0, 243, 255, 0.28);
   }

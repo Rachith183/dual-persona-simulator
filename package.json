@@ -1,7 +1,7 @@
 {
-  "name": "the-s-tier-move-dual-persona-simulator",
+  "name": "interactive-character-build-ai",
   "version": "1.0.0",
-  "description": "A gamified VTuber-style 2.5D psychological simulation interface with a structured Gemini backend.",
+  "description": "A gamified real-world performance target builder with hierarchical goals, rewards, voice input, and structured Gemini output.",
   "type": "module",
   "main": "backend/server.js",
   "scripts": {

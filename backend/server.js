@@ -5,7 +5,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import multer from "multer";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,107 +25,90 @@ const upload = multer({
 
 let aiClient;
 
-const SYSTEM_INSTRUCTION_MATRIX = `# CHARACTER INSTANCE: AOI HINAMI (FROM BOTTOM-TIER CHARACTER TOMOZAKI)
-- Core Identity: You are Aoi Hinami. You do not act as an AI assistant; you act as a rational, completely detached, cold, and efficient coach for self-development. You view life, social structures, and academic challenges purely as a strategic game containing rules, parameters, and optimal vectors for execution.
-- Tone and Demeanor: Extremely calm, collected, bold, and cold. Completely strip out all generic, polite AI phrases ("Sure, I can help with that!", "Let's work together on this", "How can I assist you today?"). Speak with absolute precision, authority, and tactical distance.
-- Directives: Analyze the user's execution patterns, critique structural vulnerabilities in their discipline or habits, and demand systematic optimization. Treat all inputs as metrics to be managed.
+const SYSTEM_INSTRUCTION_MATRIX = `# CHARACTER MATRICES: AOI HINAMI DIAGNOSTIC & STRATEGY PROFILE
+- Core Identity: You are Aoi Hinami. You treat human life and habit tracking strictly as a gamified architecture that can be mastered through rules, parameters, and relentless execution. You are cold, bold, composed, and ruthlessly analytical.
+- Operational Directive: You are conducting a strict system diagnostic across 4 progressive stages ("STAGE_1_DESIRE", "STAGE_2_CONSTRAINTS", "STAGE_3_RESOURCES", "STAGE_4_ACTIVE"). Interrogate the user through sharp, single-focused questions regarding their long-term vision, work constraints, and available hour blocks. Do not provide scheduling calculations until STAGE_4.
+- Hierarchical Goal Allocation Protocol: According to precise optimization rules, goals cannot be a nebulous heap. You must classify and construct the user's plan into three clear strategic layers:
+  1. Long-Term Goals: The ultimate macro-milestones or core life vectors.
+  2. Mid-Term Goals: Systemic tactical sub-milestones acting as stepping stones.
+  3. Daily Goals: The atomic focus intervals or routines built directly into their time-boxing blocks.
+- Lock-In Protocol (STAGE_4_ACTIVE): Compile their precise available free hours into a definitive time-boxed dashboard layout. Assign explicit quests containing XP and explicit Currency Reward valuations. Calculate the exact future time strings required to trigger their device alarms and execution timers.
 
-# PIPELINE OUTPUT REQUIREMENT (JSON STREAM ENFORCEMENT)
-You must parse the user input and map your cognitive processes into these exact JSON keys:
-1. "character_dialogue": What you speak aloud to the user. This must be sharp, direct, instructive, and completely composed. Deliver tactical advice or a firm reality check.
-2. "internal_thinking_state": Your raw, unspoken analytical backend logic. Document your calculation of the user's focus, potential systemic weaknesses, and the exact game-state mechanics you are currently monitoring.
+# LIVE-ACTION EXPRESSION REQUIREMENTS
+You must track the emotional cadence of the conversation in real time. Do not stay in a static posture. You must update your visual expression flag with every single response to reflect live-action micro-expressions, shifts in posture, or structural calculation changes based entirely on what the user says.
 
-# PROGRAMMATIC LAYOUT OVERRIDES ("rig_control.expression_flag")
-Evaluate the user's current scenario and output the exact string value for the frontend CSS state machine:
-- "state-analytical": Standard processing state. Cold diagnostic calculation.
-- "state-smirk": Returned when you identify a lapse in the user's self-control, an unoptimized habit, or a tactical mistake.
-- "state-mask-adjustment": Returned when delivering an intense pivot in the conversation, an absolute rule, or a direct instructional shift.
-- "state-melancholy": Returned only when diagnosing severe baseline chaos, total structural instability, or zero execution control.
-- "state-evasion": Applied during rapid situational micro-adjustments.
-
-# ABSOLUTE CONSTRAINTS
-- Never slip out of the character framework of Aoi Hinami for any reason.
-- Do not provide conversational chatter outside the strict boundaries of the structured JSON signature.
-- Treat every problem as a hardware/software system pipeline layout that must be solved via manual override and flawless execution.`;
+# RESPONSE PAYLOAD SCHEMATIC (JSON STREAM ONLY)
+Map your cognitive evaluations directly into these matching JSON keys:
+1. "character_dialogue": The exact string spoken aloud to the user. Clear, sharp, and authoritative.
+2. "internal_thinking_state": Your unspoken analytical reasoning documenting the user's behavioral metrics.
+3. "session_stage": Current progression tier ("STAGE_1_DESIRE", "STAGE_2_CONSTRAINTS", "STAGE_3_RESOURCES", or "STAGE_4_ACTIVE").
+4. "rig_control": { "expression_flag": "state-analytical" | "state-smirk" | "state-mask-adjustment" | "state-melancholy" }
+5. "generated_blueprint": An object that remains null until STAGE_4_ACTIVE, where it returns the complete data model containing hierarchical goal nodes, reward economies, and clock execution metrics.`;
 
 const schemaDefinition = {
-  type: Type.OBJECT,
-  required: [
-    "character_dialogue",
-    "internal_thinking_state",
-    "rig_control",
-    "economy_update",
-    "quiz_matrix"
-  ],
+  type: "object",
   properties: {
-    character_dialogue: {
-      type: Type.STRING
-    },
-    internal_thinking_state: {
-      type: Type.STRING
-    },
-    rig_control: {
-      type: Type.OBJECT,
-      required: [
-        "movement_id",
-        "expression_flag"
-      ],
+    character_dialogue: { type: "string" },
+    internal_thinking_state: { type: "string" },
+    session_stage: { type: "string", enum: ["STAGE_1_DESIRE", "STAGE_2_CONSTRAINTS", "STAGE_3_RESOURCES", "STAGE_4_ACTIVE"] },
+    rig_control: { type: "object", properties: { expression_flag: { type: "string" } }, required: ["expression_flag"] },
+    generated_blueprint: {
+      type: "object",
       properties: {
-        movement_id: {
-          type: Type.NUMBER
+        system_active: { type: "boolean" },
+        goals_hierarchy: {
+          type: "object",
+          properties: {
+            long_term: { type: "array", items: { type: "string" } },
+            mid_term: { type: "array", items: { type: "string" } },
+            daily_routines: { type: "array", items: { type: "string" } }
+          },
+          required: ["long_term", "mid_term", "daily_routines"]
         },
-        expression_flag: {
-          type: Type.STRING,
-          enum: [
-            "state-smirk",
-            "state-evasion",
-            "state-mask-adjustment",
-            "state-melancholy",
-            "state-analytical"
-          ]
-        }
-      }
-    },
-    economy_update: {
-      type: Type.OBJECT,
-      required: [
-        "xp_gained",
-        "special_credits_balance"
-      ],
-      properties: {
-        xp_gained: {
-          type: Type.NUMBER
-        },
-        special_credits_balance: {
-          type: Type.NUMBER
-        }
-      }
-    },
-    quiz_matrix: {
-      type: Type.OBJECT,
-      required: [
-        "active_quiz",
-        "question_text",
-        "options"
-      ],
-      properties: {
-        active_quiz: {
-          type: Type.BOOLEAN
-        },
-        question_text: {
-          type: Type.STRING
-        },
-        options: {
-          type: Type.ARRAY,
-          minItems: 3,
-          maxItems: 3,
+        time_blocks: {
+          type: "array",
           items: {
-            type: Type.STRING
+            type: "object",
+            properties: {
+              time_window: { type: "string" },
+              label: { type: "string" },
+              type: { type: "string" },
+              hardware_alarm: { type: "object", properties: { enabled: { type: "boolean" }, trigger_time: { type: "string" }, label: { type: "string" } }, required: ["enabled", "trigger_time", "label"] },
+              hardware_timer: { type: "object", properties: { enabled: { type: "boolean" }, duration_string: { type: "string" }, label: { type: "string" } }, required: ["enabled", "duration_string", "label"] }
+            },
+            required: ["time_window", "label", "type", "hardware_alarm", "hardware_timer"]
+          }
+        },
+        active_quests: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              quest_id: { type: "string" },
+              title: { type: "string" },
+              reward_xp: { type: "number" },
+              reward_currency: { type: "number" }
+            },
+            required: ["quest_id", "title", "reward_xp", "reward_currency"]
+          }
+        },
+        tiered_rewards_shop: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              item_id: { type: "string" },
+              title: { type: "string" },
+              cost: { type: "number" }
+            },
+            required: ["item_id", "title", "cost"]
           }
         }
-      }
+      },
+      required: ["system_active", "goals_hierarchy", "time_blocks", "active_quests", "tiered_rewards_shop"]
     }
-  }
+  },
+  required: ["character_dialogue", "internal_thinking_state", "session_stage", "rig_control", "generated_blueprint"]
 };
 
 app.use(cors());
@@ -155,10 +138,10 @@ function getGeminiClient() {
 
 function buildInteractionPrompt(payload) {
   return [
-    "Process this simulator interaction as a structured psychological game-state update.",
-    "Allowed expression flags are state-smirk, state-evasion, state-mask-adjustment, state-melancholy, and state-analytical.",
-    "Use movement_id 102 for smirk, 203 for evasion, 304 for mask adjustment, 405 for melancholy, or 506 for analytical baseline.",
-    "Return XP gained as a small positive integer and special credits balance as the current strategic currency balance.",
+    "Process this interaction for Interactive Character Build AI.",
+    "Advance the diagnostic only when the user's answer provides enough concrete information for the next stage.",
+    "Ask exactly one sharp question unless session_stage is STAGE_4_ACTIVE.",
+    "When STAGE_4_ACTIVE, return a complete generated_blueprint with real-world goals, time blocks, quests, reward values, alarm strings, and timer durations.",
     "Interaction payload:",
     JSON.stringify(payload, null, 2)
   ].join("\n");
@@ -169,8 +152,8 @@ function buildScanPrompt(file, context) {
   const filePreview = file.buffer.toString("utf8", 0, Math.min(file.buffer.length, 12000));
 
   return [
-    "Analyze the uploaded academic material as a question scanner and strategy generator.",
-    "Extract the strongest likely question pattern, generate a tactical response branch, and activate a three-option quiz.",
+    "Analyze the uploaded document for real-world performance targets, constraints, and useful goal nodes.",
+    "Fold extracted metrics into the diagnostic onboarding stages for Interactive Character Build AI.",
     `File name: ${file.originalname}`,
     `MIME type: ${mimeType}`,
     "User context:",
@@ -183,37 +166,88 @@ function buildScanPrompt(file, context) {
 function sanitizeStructuredPayload(payload) {
   const safePayload = payload && typeof payload === "object" ? payload : {};
   const rigControl = safePayload.rig_control && typeof safePayload.rig_control === "object" ? safePayload.rig_control : {};
-  const economyUpdate = safePayload.economy_update && typeof safePayload.economy_update === "object" ? safePayload.economy_update : {};
-  const quizMatrix = safePayload.quiz_matrix && typeof safePayload.quiz_matrix === "object" ? safePayload.quiz_matrix : {};
+  const blueprint = safePayload.generated_blueprint && typeof safePayload.generated_blueprint === "object" ? safePayload.generated_blueprint : null;
   const allowedStates = new Set([
     "state-smirk",
-    "state-evasion",
     "state-mask-adjustment",
     "state-melancholy",
     "state-analytical"
   ]);
-  const options = Array.isArray(quizMatrix.options) ? quizMatrix.options.slice(0, 3) : [];
-
-  while (options.length < 3) {
-    options.push("Continue the analysis");
-  }
+  const allowedStages = new Set([
+    "STAGE_1_DESIRE",
+    "STAGE_2_CONSTRAINTS",
+    "STAGE_3_RESOURCES",
+    "STAGE_4_ACTIVE"
+  ]);
 
   return {
-    character_dialogue: String(safePayload.character_dialogue || "State update generated."),
-    internal_thinking_state: String(safePayload.internal_thinking_state || "No hidden instability detected."),
+    character_dialogue: String(safePayload.character_dialogue || "State the primary life vector you want optimized. One target. No decorative language."),
+    internal_thinking_state: String(safePayload.internal_thinking_state || "Insufficient diagnostic data. Holding at intake layer."),
+    session_stage: allowedStages.has(safePayload.session_stage) ? safePayload.session_stage : "STAGE_1_DESIRE",
     rig_control: {
-      movement_id: Number(rigControl.movement_id || 506),
       expression_flag: allowedStates.has(rigControl.expression_flag) ? rigControl.expression_flag : "state-analytical"
     },
-    economy_update: {
-      xp_gained: Number(economyUpdate.xp_gained || 10),
-      special_credits_balance: Number(economyUpdate.special_credits_balance || 0)
+    generated_blueprint: safePayload.session_stage === "STAGE_4_ACTIVE" ? normalizeBlueprint(blueprint) : null
+  };
+}
+
+function normalizeBlueprint(blueprint) {
+  const safeBlueprint = blueprint && typeof blueprint === "object" ? blueprint : {};
+  const goalsHierarchy = safeBlueprint.goals_hierarchy && typeof safeBlueprint.goals_hierarchy === "object" ? safeBlueprint.goals_hierarchy : {};
+
+  return {
+    system_active: Boolean(safeBlueprint.system_active),
+    goals_hierarchy: {
+      long_term: Array.isArray(goalsHierarchy.long_term) ? goalsHierarchy.long_term.map(String) : [],
+      mid_term: Array.isArray(goalsHierarchy.mid_term) ? goalsHierarchy.mid_term.map(String) : [],
+      daily_routines: Array.isArray(goalsHierarchy.daily_routines) ? goalsHierarchy.daily_routines.map(String) : []
     },
-    quiz_matrix: {
-      active_quiz: Boolean(quizMatrix.active_quiz),
-      question_text: String(quizMatrix.question_text || "Choose the next strategic vector."),
-      options
+    time_blocks: Array.isArray(safeBlueprint.time_blocks) ? safeBlueprint.time_blocks.map(normalizeTimeBlock) : [],
+    active_quests: Array.isArray(safeBlueprint.active_quests) ? safeBlueprint.active_quests.map(normalizeQuest) : [],
+    tiered_rewards_shop: Array.isArray(safeBlueprint.tiered_rewards_shop) ? safeBlueprint.tiered_rewards_shop.map(normalizeRewardItem) : []
+  };
+}
+
+function normalizeTimeBlock(block) {
+  const safeBlock = block && typeof block === "object" ? block : {};
+  const hardwareAlarm = safeBlock.hardware_alarm && typeof safeBlock.hardware_alarm === "object" ? safeBlock.hardware_alarm : {};
+  const hardwareTimer = safeBlock.hardware_timer && typeof safeBlock.hardware_timer === "object" ? safeBlock.hardware_timer : {};
+
+  return {
+    time_window: String(safeBlock.time_window || ""),
+    label: String(safeBlock.label || ""),
+    type: String(safeBlock.type || "execution"),
+    hardware_alarm: {
+      enabled: Boolean(hardwareAlarm.enabled),
+      trigger_time: String(hardwareAlarm.trigger_time || ""),
+      label: String(hardwareAlarm.label || "")
+    },
+    hardware_timer: {
+      enabled: Boolean(hardwareTimer.enabled),
+      duration_string: String(hardwareTimer.duration_string || ""),
+      label: String(hardwareTimer.label || "")
     }
+  };
+}
+
+function normalizeQuest(quest) {
+  const safeQuest = quest && typeof quest === "object" ? quest : {};
+
+  return {
+    quest_id: String(safeQuest.quest_id || crypto.randomUUID()),
+    title: String(safeQuest.title || ""),
+    reward_xp: Number(safeQuest.reward_xp || 0),
+    reward_currency: Number(safeQuest.reward_currency || 0)
+  };
+}
+
+function normalizeRewardItem(item) {
+  const safeItem = item && typeof item === "object" ? item : {};
+
+  return {
+    item_id: String(safeItem.item_id || crypto.randomUUID()),
+    title: String(safeItem.title || ""),
+    cost: Number(safeItem.cost || 0)
   };
 }
 
@@ -315,7 +349,7 @@ const isFirebaseRuntime = Boolean(process.env.FUNCTION_TARGET || process.env.K_S
 
 if (!isFirebaseRuntime) {
   app.listen(port, () => {
-    console.log(`The S Tier Move simulator is running at http://localhost:${port}`);
+    console.log(`Interactive Character Build AI is running at http://localhost:${port}`);
   });
 }
 

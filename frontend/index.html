@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="The S Tier Move: Dual Persona Simulator">
-    <title>The S Tier Move: Dual Persona Simulator</title>
+    <meta name="description" content="Interactive Character Build AI">
+    <title>Interactive Character Build AI</title>
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
-    <main class="vtuber-interface-container" aria-label="The S Tier Move: Dual Persona Simulator">
+    <main class="vtuber-interface-container" aria-label="Interactive Character Build AI">
       <section class="hud-overlay" aria-label="Simulation metrics">
         <div class="hud-block">
           <span class="hud-label">XP</span>
@@ -24,7 +24,7 @@
         </div>
       </section>
 
-      <section class="simulator-stage" aria-label="Character simulation stage">
+      <section class="character-build-stage" aria-label="Character build stage">
         <div class="character-viewport state-analytical" aria-label="2.5D character rig">
           <img class="layer-bg rig-layer" src="./layers/baground.png" alt="">
           <img class="layer-left-hair-back rig-layer tracking-layer" src="./layers/left hair back.png" alt="">
@@ -38,35 +38,35 @@
           <img class="layer-right-strand rig-layer tracking-layer" src="./layers/right strand hair.png" alt="">
           <img class="layer-bangs rig-layer tracking-layer" src="./layers/bang.png" alt="Dual persona character rig">
 
-          <button class="hitbox hitbox-head" type="button" aria-label="Head interaction"></button>
-          <button class="hitbox hitbox-chest" type="button" aria-label="Chest interaction"></button>
         </div>
       </section>
 
-      <section class="control-deck" aria-label="Dialogue and scan controls">
+      <section class="control-deck" aria-label="Diagnostic and execution controls">
         <article class="dialogue-terminal" aria-label="Dialogue terminal">
           <div class="terminal-text">
             <p class="terminal-label">Dialogue</p>
             <div class="character-dialogue" aria-live="polite">
-              Initialize the scenario. Define the move, the cost, and the probability of failure.
+              State the primary life vector you want optimized. One target. No decorative language.
             </div>
+            <p class="terminal-label">Session Stage</p>
+            <div class="session-stage-state" aria-live="polite">STAGE_1_DESIRE</div>
             <p class="terminal-label">Internal State</p>
             <div class="internal-thinking-state" aria-live="polite">
-              Analytical baseline active. Awaiting interaction vector.
+              Intake layer active. Awaiting measurable desire signal.
             </div>
             <form class="chat-input-form" aria-label="Manual dialogue input">
-              <input id="chat-text-input" class="chat-text-input" type="text" autocomplete="off" placeholder="Enter execution vector">
+              <input id="chat-text-input" class="chat-text-input" type="text" autocomplete="off" placeholder="Enter target, constraints, or available hours">
               <button class="chat-submit" type="submit">Send</button>
               <button id="mic-toggle-btn" class="mic-toggle-btn" type="button" aria-pressed="false" aria-label="Toggle microphone input">Mic</button>
             </form>
           </div>
-          <div class="quiz-container" aria-label="Dialogue options">
-            <p class="quiz-question">Select a strategic opening.</p>
-            <div class="quiz-options">
-              <button class="quiz-option" type="button" data-option="Run a cold assessment">Run a cold assessment</button>
-              <button class="quiz-option" type="button" data-option="Force an S tier move">Force an S tier move</button>
-              <button class="quiz-option" type="button" data-option="Audit emotional leakage">Audit emotional leakage</button>
-            </div>
+          <div class="goals-hierarchy-container" aria-label="Hierarchical goals">
+            <p class="terminal-label">Long-Term Goals</p>
+            <ul class="goal-list long-term-goals"></ul>
+            <p class="terminal-label">Mid-Term Goals</p>
+            <ul class="goal-list mid-term-goals"></ul>
+            <p class="terminal-label">Daily Routines</p>
+            <ul class="goal-list daily-routines"></ul>
           </div>
         </article>
 
@@ -80,6 +80,21 @@
           <button class="scan-submit" type="button">Scan Document</button>
           <p class="scan-status" aria-live="polite">No document queued.</p>
         </aside>
+      </section>
+
+      <section class="execution-dashboard" aria-label="Execution dashboard">
+        <div class="time-blocks-container">
+          <p class="terminal-label">Time Blocks</p>
+          <div class="time-blocks-list"></div>
+        </div>
+        <div class="active-quests-container">
+          <p class="terminal-label">Active Quests</p>
+          <div class="active-quests-list"></div>
+        </div>
+        <div class="rewards-shop-container">
+          <p class="terminal-label">Rewards Shop</p>
+          <div class="rewards-shop-list"></div>
+        </div>
       </section>
     </main>
 
