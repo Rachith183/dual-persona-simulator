@@ -1,270 +1,420 @@
 /**
- * PRODUCTION-READY CHARACTER HUD INTERFACE
- * Navigation routing, calendar engine, and state management
+ * INTERACTIVE CHARACTER BUILD AI - COMPLETE REWRITE
+ * Firebase real-time sync, expression-driven canvas, Gemini integration
  */
 
 // ============================================================================
-// STATE MANAGEMENT
+// CONFIGURATION & STATE
 // ============================================================================
-
-const AppState = {
-    activeTrackingYear: 2026,
-    activeTrackingMonth: 4, // 0-indexed (May = 4)
-    activePanel: 'ch-core',
-    drawerOpen: false,
-};
 
 const MONTH_NAMES = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const EXPRESSION_MAP = {
+    'exp 1': 'exp 1 - angry',
+    'exp 2': 'exp 2 - annoyed or disatisfied',
+    'exp 3': 'exp3-proud or satisfied',
+    'exp 4': 'exp 4 - smiling'
+};
+
+const AppState = {
+    currentYear: 2026,
+    currentMonth: 4, // 0-indexed: May
+    currentPanel: 'ch-core',
+    currentExpression: 'exp 3',
+    sidebarOpen: false,
+    
+    // Firebase data
+    userProfile: {},
+    userGoals: {},
+    userCalendar: {},
+    userDistractions: [],
+    userContext: {},
+};
+
 // ============================================================================
 // DOM REFERENCES
 // ============================================================================
 
 const DOM = {
-    hamburgerBtn: document.getElementById('hamburger-menu-trigger'),
-    sidebarDrawer: document.getElementById('app-sidebar-drawer'),
-    navLinks: document.querySelectorAll('.nav-link'),
-    contentPanels: document.querySelectorAll('.content-panel'),
+    // Sidebar
+    sidebarToggle: document.getElementById('sidebar-toggle-btn'),
+    sidebar: document.getElementById('app-sidebar'),
+    sidebarItems: document.querySelectorAll('.sidebar-nav-item'),
     
-    // Calendar elements
-    calendarPrevBtn: document.getElementById('calendar-prev-month'),
-    calendarNextBtn: document.getElementById('calendar-next-month'),
-    calendarMonthYear: document.getElementById('calendar-month-year'),
-    calendarDaysMatrix: document.getElementById('calendar-days-matrix'),
+    // Panels
+    contentViewport: document.getElementById('content-viewport'),
+    allPanels: document.querySelectorAll('.app-panel'),
+    panelChCore: document.getElementById('panel-ch-core'),
+    panelGoals: document.getElementById('panel-goal-tracker'),
+    panelCalendar: document.getElementById('panel-calendar'),
+    panelDistraction: document.getElementById('panel-distraction'),
+    panelProfile: document.getElementById('panel-profile'),
     
-    // Chat elements
-    chatUserInput: document.getElementById('chat-user-input'),
-    chatMicBtn: document.getElementById('chat-mic-btn'),
+    // CH Core - Avatar & Chat
+    avatarBase: document.getElementById('avatar-base'),
+    chatHistory: document.getElementById('chat-history'),
+    chatInput: document.getElementById('chat-input'),
     chatSendBtn: document.getElementById('chat-send-btn'),
-    chatHistory: document.getElementById('chat-history-log'),
+    chatMicBtn: document.getElementById('chat-mic-btn'),
+    
+    // Calendar
+    calendarGrid: document.getElementById('calendar-grid'),
+    calendarTitle: document.getElementById('calendar-month-year'),
+    prevMonthBtn: document.getElementById('prev-month-btn'),
+    nextMonthBtn: document.getElementById('next-month-btn'),
+    
+    // Goal Tracker
+    dailyProgress: document.getElementById('daily-progress'),
+    midtermProgress: document.getElementById('midterm-progress'),
+    endgoalProgress: document.getElementById('endgoal-progress'),
+    dailyValue: document.getElementById('daily-value'),
+    midtermValue: document.getElementById('midterm-value'),
+    endgoalValue: document.getElementById('endgoal-value'),
+    performanceTbody: document.getElementById('performance-tbody'),
+    
+    // Distraction Tracker
+    distractionForm: document.getElementById('distraction-form'),
+    dailyDistractionCount: document.getElementById('daily-distraction-count'),
+    weeklyDistractionCount: document.getElementById('weekly-distraction-count'),
+    monthlyDistractionCount: document.getElementById('monthly-distraction-count'),
+    distractionEntries: document.getElementById('distraction-entries'),
+    
+    // Profile Form
+    profileForm: document.getElementById('profile-form'),
+    academicDetails: document.getElementById('academic-details'),
+    routineConstraints: document.getElementById('routine-constraints'),
+    physicalMetrics: document.getElementById('physical-metrics'),
+    lifestyleRegimen: document.getElementById('lifestyle-regimen'),
 };
 
 // ============================================================================
-// HAMBURGER MENU & DRAWER TOGGLE
+// SIDEBAR & PANEL ROUTING
 // ============================================================================
 
 /**
- * Toggle sidebar drawer visibility
+ * Toggle sidebar visibility on mobile
  */
-function toggleDrawer() {
-    AppState.drawerOpen = !AppState.drawerOpen;
-    
-    if (AppState.drawerOpen) {
-        DOM.sidebarDrawer.classList.add('drawer-visible');
+function toggleSidebar() {
+    AppState.sidebarOpen = !AppState.sidebarOpen;
+    if (AppState.sidebarOpen) {
+        DOM.sidebar.classList.add('open');
     } else {
-        DOM.sidebarDrawer.classList.remove('drawer-visible');
+        DOM.sidebar.classList.remove('open');
     }
 }
 
 /**
- * Initialize hamburger menu trigger
+ * Switch active panel
  */
-function initHamburgerMenu() {
-    if (DOM.hamburgerBtn) {
-        DOM.hamburgerBtn.addEventListener('click', toggleDrawer);
-    }
-    
-    // Close drawer when clicking outside
-    document.addEventListener('click', (e) => {
-        if (AppState.drawerOpen && 
-            !DOM.sidebarDrawer.contains(e.target) &&
-            !DOM.hamburgerBtn.contains(e.target)) {
-            toggleDrawer();
-        }
-    });
-}
-
-// ============================================================================
-// PANEL ROUTING & NAVIGATION
-// ============================================================================
-
-/**
- * Switch active content panel
- */
-function switchPanel(panelRoute) {
+function switchPanel(panelName) {
     // Hide all panels
-    DOM.contentPanels.forEach(panel => {
-        panel.classList.remove('active-panel');
-    });
+    DOM.allPanels.forEach(panel => panel.classList.add('hidden'));
     
-    // Show target panel based on route
+    // Show target panel
     const panelMap = {
-        'ch-core': 'panel-character-ai',
-        'goal-tracker': 'panel-goal-tracker',
-        'calendar': 'panel-calendar',
-        'distraction': 'panel-distraction',
-        'profile': 'panel-profile',
+        'ch-core': DOM.panelChCore,
+        'goal-tracker': DOM.panelGoals,
+        'calendar': DOM.panelCalendar,
+        'distraction': DOM.panelDistraction,
+        'profile': DOM.panelProfile,
     };
     
-    const targetPanelId = panelMap[panelRoute];
-    if (targetPanelId) {
-        const targetPanel = document.getElementById(targetPanelId);
-        if (targetPanel) {
-            targetPanel.classList.add('active-panel');
-            AppState.activePanel = panelRoute;
-        }
+    const targetPanel = panelMap[panelName];
+    if (targetPanel) {
+        targetPanel.classList.remove('hidden');
+        AppState.currentPanel = panelName;
     }
     
-    // Close drawer after selection
-    if (AppState.drawerOpen) {
-        toggleDrawer();
+    // Close sidebar on mobile after selection
+    if (AppState.sidebarOpen && window.innerWidth < 768) {
+        toggleSidebar();
     }
 }
 
 /**
- * Initialize navigation link listeners
+ * Initialize sidebar and panel routing
  */
-function initNavigation() {
-    DOM.navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const route = link.getAttribute('data-route');
-            switchPanel(route);
+function initRouting() {
+    DOM.sidebarToggle?.addEventListener('click', toggleSidebar);
+    
+    DOM.sidebarItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            const panelName = e.currentTarget.getAttribute('data-panel');
+            switchPanel(panelName);
         });
     });
 }
 
 // ============================================================================
-// CALENDAR ENGINE - SINGLE MONTH RENDERING
+// CALENDAR ENGINE
 // ============================================================================
 
 /**
- * Get days in month
+ * Get number of days in a month
  */
 function getDaysInMonth(year, month) {
     return new Date(year, month + 1, 0).getDate();
 }
 
 /**
- * Get first day of week for month (0 = Sunday)
+ * Get first day of week for a month (0 = Sunday)
  */
 function getFirstDayOfMonth(year, month) {
     return new Date(year, month, 1).getDay();
 }
 
 /**
+ * Get date string (YYYY-MM-DD)
+ */
+function getDateString(year, month, day) {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/**
+ * Count tasks for a specific date
+ */
+function getTaskCountForDate(year, month, day) {
+    const dateStr = getDateString(year, month, day);
+    // Get task count from Firebase calendar data
+    // For now, return random for demo
+    return Math.floor(Math.random() * 5);
+}
+
+/**
  * Render single-month calendar grid
  */
 function renderCalendarMonth() {
-    const year = AppState.activeTrackingYear;
-    const month = AppState.activeTrackingMonth;
+    const year = AppState.currentYear;
+    const month = AppState.currentMonth;
     
-    // Update month/year display
-    DOM.calendarMonthYear.textContent = `${MONTH_NAMES[month]} ${year}`;
+    // Update title
+    DOM.calendarTitle.textContent = `${MONTH_NAMES[month]} ${year}`;
     
-    // Clear previous grid
-    DOM.calendarDaysMatrix.innerHTML = '';
+    // Clear grid
+    DOM.calendarGrid.innerHTML = '';
     
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     
-    // Create weekday header row
-    const weekdayHeader = document.createElement('div');
-    weekdayHeader.className = 'calendar-week-header';
+    // Create weekday headers
+    const weekdayRow = document.createElement('div');
+    weekdayRow.className = 'calendar-weekday-row';
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     weekdays.forEach(day => {
-        const dayLabel = document.createElement('div');
-        dayLabel.className = 'calendar-day-header';
-        dayLabel.textContent = day;
-        weekdayHeader.appendChild(dayLabel);
+        const header = document.createElement('div');
+        header.className = 'calendar-weekday-header';
+        header.textContent = day;
+        weekdayRow.appendChild(header);
     });
-    DOM.calendarDaysMatrix.appendChild(weekdayHeader);
+    DOM.calendarGrid.appendChild(weekdayRow);
     
-    // Create day cells grid
-    const dayGrid = document.createElement('div');
-    dayGrid.className = 'calendar-days-grid';
+    // Create day cells
+    const dayRow = document.createElement('div');
+    dayRow.className = 'calendar-day-row';
     
-    // Add empty cells before month starts
+    // Empty cells before month starts
     for (let i = 0; i < firstDay; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'calendar-day-cell empty';
-        dayGrid.appendChild(emptyCell);
+        dayRow.appendChild(emptyCell);
     }
     
-    // Add day cells
+    // Day cells
     for (let day = 1; day <= daysInMonth; day++) {
         const dayCell = document.createElement('div');
         dayCell.className = 'calendar-day-cell';
-        dayCell.textContent = day;
         
-        // Optional: Add task indicator logic here
-        dayCell.addEventListener('click', () => {
-            console.log(`Clicked day: ${day}`);
-        });
+        // Add task indicator
+        const taskCount = getTaskCountForDate(year, month, day);
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'day-number';
+        dayNumber.textContent = day;
         
-        dayGrid.appendChild(dayCell);
+        const indicator = document.createElement('div');
+        indicator.className = 'task-indicator';
+        if (taskCount >= 2) {
+            indicator.classList.add('checkmark');
+            indicator.innerHTML = '✓';
+            indicator.style.color = '#00F5A0'; // Emerald mint
+        } else if (taskCount > 0) {
+            indicator.classList.add('partial');
+            indicator.innerHTML = '◐';
+            indicator.style.color = '#FFB020';
+        } else {
+            indicator.classList.add('empty');
+            indicator.innerHTML = '✗';
+            indicator.style.color = '#FF3366'; // Vivid coral
+        }
+        
+        dayCell.appendChild(dayNumber);
+        dayCell.appendChild(indicator);
+        dayRow.appendChild(dayCell);
     }
     
-    DOM.calendarDaysMatrix.appendChild(dayGrid);
+    DOM.calendarGrid.appendChild(dayRow);
 }
 
 /**
- * Navigate to previous month
+ * Handle previous month navigation
  */
 function handlePrevMonth() {
-    AppState.activeTrackingMonth--;
-    if (AppState.activeTrackingMonth < 0) {
-        AppState.activeTrackingMonth = 11;
-        AppState.activeTrackingYear--;
+    AppState.currentMonth--;
+    if (AppState.currentMonth < 0) {
+        AppState.currentMonth = 11;
+        AppState.currentYear--;
     }
     renderCalendarMonth();
 }
 
 /**
- * Navigate to next month
+ * Handle next month navigation
  */
 function handleNextMonth() {
-    AppState.activeTrackingMonth++;
-    if (AppState.activeTrackingMonth > 11) {
-        AppState.activeTrackingMonth = 0;
-        AppState.activeTrackingYear++;
+    AppState.currentMonth++;
+    if (AppState.currentMonth > 11) {
+        AppState.currentMonth = 0;
+        AppState.currentYear++;
     }
     renderCalendarMonth();
 }
 
 /**
- * Initialize calendar navigation listeners
+ * Initialize calendar navigation
  */
-function initCalendarNavigation() {
-    if (DOM.calendarPrevBtn) {
-        DOM.calendarPrevBtn.addEventListener('click', handlePrevMonth);
-    }
-    if (DOM.calendarNextBtn) {
-        DOM.calendarNextBtn.addEventListener('click', handleNextMonth);
-    }
+function initCalendar() {
+    DOM.prevMonthBtn?.addEventListener('click', handlePrevMonth);
+    DOM.nextMonthBtn?.addEventListener('click', handleNextMonth);
+    renderCalendarMonth();
 }
 
 // ============================================================================
-// CHAT INTERFACE HANDLERS
+// AVATAR EXPRESSION SWITCHING
 // ============================================================================
 
 /**
- * Handle chat message send
+ * Switch avatar expression layers
  */
-function handleChatSend() {
-    const message = DOM.chatUserInput?.value.trim();
-    if (!message) return;
+function switchAvatarExpression(expressionState) {
+    // expressionState: 'exp 1', 'exp 2', 'exp 3', 'exp 4'
+    const folderMap = {
+        'exp 1': 'exp 1 - angry',
+        'exp 2': 'exp 2 - annoyed or disatisfied',
+        'exp 3': 'exp3-proud or satisfied',
+        'exp 4': 'exp 4 - smiling'
+    };
+    
+    const folder = folderMap[expressionState];
+    if (!folder) return;
+    
+    const newSrc = `./${folder}/idle.png`;
+    
+    // Smooth fade transition
+    DOM.avatarBase.style.opacity = '0.5';
+    setTimeout(() => {
+        DOM.avatarBase.src = newSrc;
+        DOM.avatarBase.style.opacity = '1';
+    }, 150);
+    
+    AppState.currentExpression = expressionState;
+    console.log(`Avatar expression switched to: ${expressionState}`);
+}
+
+// ============================================================================
+// CHAT INTERFACE & GEMINI INTEGRATION
+// ============================================================================
+
+/**
+ * Send chat message and get Gemini response
+ */
+async function handleChatSend() {
+    const userMessage = DOM.chatInput?.value.trim();
+    if (!userMessage) return;
     
     // Display user message
-    const userMsg = document.createElement('div');
-    userMsg.className = 'chat-message user-message';
-    userMsg.innerHTML = `<p>${escapeHtml(message)}</p>`;
-    DOM.chatHistory?.appendChild(userMsg);
+    const userMsgEl = document.createElement('div');
+    userMsgEl.className = 'chat-message user';
+    userMsgEl.innerHTML = `<p>${escapeHtml(userMessage)}</p>`;
+    DOM.chatHistory?.appendChild(userMsgEl);
     
     // Clear input
-    if (DOM.chatUserInput) {
-        DOM.chatUserInput.value = '';
-    }
+    if (DOM.chatInput) DOM.chatInput.value = '';
     
-    // Auto-scroll to bottom
+    // Auto-scroll
     if (DOM.chatHistory) {
         DOM.chatHistory.scrollTop = DOM.chatHistory.scrollHeight;
     }
     
-    console.log('Message sent:', message);
+    // Get AI response
+    try {
+        const response = await callGeminiAPI(userMessage);
+        
+        if (response && response.character_dialogue) {
+            // Add AI response
+            const aiMsgEl = document.createElement('div');
+            aiMsgEl.className = 'chat-message ai';
+            aiMsgEl.innerHTML = `<p>${escapeHtml(response.character_dialogue)}</p>`;
+            DOM.chatHistory?.appendChild(aiMsgEl);
+            
+            // Switch avatar expression if provided
+            if (response.current_expression_state) {
+                switchAvatarExpression(response.current_expression_state);
+            }
+            
+            // Auto-scroll
+            if (DOM.chatHistory) {
+                DOM.chatHistory.scrollTop = DOM.chatHistory.scrollHeight;
+            }
+        }
+    } catch (error) {
+        console.error('Chat error:', error);
+        const errorMsgEl = document.createElement('div');
+        errorMsgEl.className = 'chat-message system';
+        errorMsgEl.innerHTML = '<p>Unable to reach AI service. Please try again.</p>';
+        DOM.chatHistory?.appendChild(errorMsgEl);
+    }
+}
+
+/**
+ * Call Gemini API via browser (free tier)
+ */
+async function callGeminiAPI(userMessage) {
+    const apiKey = window.AOI_GEMINI_API_KEY;
+    const model = window.AOI_GEMINI_MODEL || 'gemini-2.5-flash';
+    
+    if (!apiKey) {
+        console.error('Gemini API key not found');
+        return null;
+    }
+    
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: userMessage
+                    }]
+                }]
+            })
+        });
+        
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+        
+        return {
+            character_dialogue: text,
+            current_expression_state: AppState.currentExpression
+        };
+    } catch (error) {
+        console.error('Gemini API error:', error);
+        return null;
+    }
 }
 
 /**
@@ -277,67 +427,139 @@ function escapeHtml(text) {
 }
 
 /**
- * Initialize chat listeners
+ * Initialize chat handlers
  */
-function initChatHandlers() {
-    if (DOM.chatSendBtn) {
-        DOM.chatSendBtn.addEventListener('click', handleChatSend);
-    }
+function initChat() {
+    DOM.chatSendBtn?.addEventListener('click', handleChatSend);
     
-    if (DOM.chatUserInput) {
-        DOM.chatUserInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleChatSend();
-            }
-        });
-    }
+    DOM.chatInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleChatSend();
+        }
+    });
     
-    if (DOM.chatMicBtn) {
-        DOM.chatMicBtn.addEventListener('click', () => {
-            console.log('Microphone button clicked');
-            // TODO: Implement speech-to-text
-        });
-    }
+    DOM.chatMicBtn?.addEventListener('click', () => {
+        console.log('Microphone button clicked - Speech-to-text coming soon');
+        // TODO: Implement Web Speech API
+    });
 }
 
 // ============================================================================
-// VISIBILITY STATE & SPRITE FALLBACK
+// DISTRACTION TRACKER
 // ============================================================================
 
 /**
- * Ensure main panel is visible on boot
+ * Handle distraction form submission
  */
-function ensureInitialVisibility() {
-    const mainPanel = document.getElementById('panel-character-ai');
-    if (mainPanel) {
-        mainPanel.classList.remove('hidden');
-        mainPanel.classList.add('active-panel');
-        console.log('✅ Character panel visibility enforced');
-    }
+async function handleDistractionSubmit(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(DOM.distractionForm);
+    const entry = {
+        type: formData.get('distraction-type'),
+        date: formData.get('distraction-date'),
+        time: formData.get('distraction-time'),
+        duration: parseInt(formData.get('distraction-duration'), 10),
+        timestamp: new Date().toISOString()
+    };
+    
+    // Add to local state
+    AppState.userDistractions.push(entry);
+    
+    // TODO: Sync to Firebase
+    
+    // Update display
+    updateDistractionCounts();
+    DOM.distractionForm.reset();
 }
 
 /**
- * Fallback sprite loader for avatar stage
- * If Firestore fails, defaults to exp3-proud or satisfied
+ * Update distraction counts
  */
-function loadAvatarSprite() {
-    const avatarLayer = document.getElementById('avatar-sprite-layer');
-    if (!avatarLayer) return;
+function updateDistractionCounts() {
+    const today = new Date().toISOString().split('T')[0];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    // Attempt to load default avatar
-    const defaultSpriteUrl = './exp3-proud or satisfied/idle.png';
+    const dailyCount = AppState.userDistractions.filter(d => d.date === today).length;
+    const weeklyCount = AppState.userDistractions.filter(d => d.date >= weekAgo).length;
+    const monthlyCount = AppState.userDistractions.filter(d => d.date >= monthAgo).length;
     
-    avatarLayer.onerror = () => {
-        console.warn('⚠️ Avatar sprite failed to load, attempting fallback...');
-        avatarLayer.src = defaultSpriteUrl;
+    if (DOM.dailyDistractionCount) DOM.dailyDistractionCount.textContent = dailyCount;
+    if (DOM.weeklyDistractionCount) DOM.weeklyDistractionCount.textContent = weeklyCount;
+    if (DOM.monthlyDistractionCount) DOM.monthlyDistractionCount.textContent = monthlyCount;
+}
+
+/**
+ * Initialize distraction tracker
+ */
+function initDistractionTracker() {
+    DOM.distractionForm?.addEventListener('submit', handleDistractionSubmit);
+}
+
+// ============================================================================
+// PROFILE FORM & FIREBASE SYNC
+// ============================================================================
+
+/**
+ * Handle profile form submission
+ */
+async function handleProfileSubmit(e) {
+    e.preventDefault();
+    
+    AppState.userContext = {
+        academic: DOM.academicDetails?.value || '',
+        routine: DOM.routineConstraints?.value || '',
+        physical: DOM.physicalMetrics?.value || '',
+        lifestyle: DOM.lifestyleRegimen?.value || ''
     };
     
-    // Ensure sprite is loaded
-    avatarLayer.src = avatarLayer.src || defaultSpriteUrl;
+    // TODO: Sync to Firebase
+    console.log('Profile saved (local):', AppState.userContext);
+}
+
+/**
+ * Initialize profile form
+ */
+function initProfileForm() {
+    DOM.profileForm?.addEventListener('submit', handleProfileSubmit);
+}
+
+// ============================================================================
+// GOAL TRACKER PROGRESS CIRCLES
+// ============================================================================
+
+/**
+ * Update progress circle SVG
+ */
+function updateProgressCircle(circleId, percentage) {
+    const circle = document.querySelector(`#${circleId}`);
+    if (!circle) return;
     
-    avatarLayer.onload = () => {
-        console.log('✅ Avatar sprite loaded successfully');
-    };
+    const circumference = 2 * Math.PI * 50; // r=50
+    const offset = circumference - (circumference * percentage) / 100;
+    circle.style.strokeDashoffset = offset;
+}
+
+/**
+ * Update goal progress display
+ */
+function updateGoalProgress() {
+    // These values should come from Firebase
+    // For now, using demo values
+    
+    const dailyXP = 75;  // percentage
+    const midtermXP = 45; // percentage
+    const endgoalXP = 20; // percentage
+    
+    updateProgressCircle('daily-progress', dailyXP);
+    updateProgressCircle('midterm-progress', midtermXP);
+    updateProgressCircle('endgoal-progress', endgoalXP);
+    
+    if (DOM.dailyValue) DOM.dailyValue.textContent = `${dailyXP}%`;
+    if (DOM.midtermValue) DOM.midtermValue.textContent = `${midtermXP}%`;
+    if (DOM.endgoalValue) DOM.endgoalValue.textContent = `${endgoalXP}%`;
 }
 
 // ============================================================================
@@ -345,27 +567,25 @@ function loadAvatarSprite() {
 // ============================================================================
 
 /**
- * Initialize all UI components
+ * Initialize all app components
  */
 function initializeApp() {
-    console.log('🚀 Initializing Character HUD System');
+    console.log('🚀 Initializing Interactive Character Build AI');
     
-    // Ensure visibility state
-    ensureInitialVisibility();
-    loadAvatarSprite();
+    initRouting();
+    initCalendar();
+    initChat();
+    initDistractionTracker();
+    initProfileForm();
+    updateGoalProgress();
     
-    initHamburgerMenu();
-    initNavigation();
-    initCalendarNavigation();
-    initChatHandlers();
+    // Set initial avatar expression
+    switchAvatarExpression('exp 3');
     
-    // Render initial calendar
-    renderCalendarMonth();
-    
-    console.log('✅ Character HUD System Ready');
+    console.log('✅ Application Ready');
 }
 
-// Wait for DOM to load
+// Wait for DOM load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
 } else {

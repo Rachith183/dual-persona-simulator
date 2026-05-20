@@ -1,6 +1,6 @@
 /* ============================================================================
-   PRODUCTION-READY CHARACTER HUD INTERFACE
-   Chess.com-style drawer, high-contrast palette, pristine viewports
+   INTERACTIVE CHARACTER BUILD AI - COMPLETE CSS REWRITE
+   Premium dark palette, responsive sidebar, monochrome white CH Core panel
    ============================================================================ */
 
 /* RESET & BASE STYLES */
@@ -11,15 +11,788 @@
 }
 
 html, body {
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100vh;
-    overflow: hidden;
-    background-color: #0B0F19;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #0B0F19;
     color: #f4fbff;
     line-height: 1.6;
+    overflow: hidden;
+}
+
+/* ============================================================================
+   HEADER BAR - FIXED TOP NAVIGATION
+   ============================================================================ */
+
+#top-header-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #0B0F19;
+    border-bottom: 1px solid #1a1f2e;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    z-index: 1001;
+    gap: 16px;
+}
+
+.menu-button {
+    background: none;
+    border: none;
+    color: #5C6479;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px 12px;
+    transition: color 0.2s ease;
+}
+
+.menu-button:hover {
+    color: #f4fbff;
+}
+
+.app-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f4fbff;
+    margin: 0;
+}
+
+/* ============================================================================
+   SIDEBAR - COLLAPSIBLE DRAWER (CHESS.COM STYLE)
+   ============================================================================ */
+
+#app-sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 260px;
+    height: calc(100vh - 60px);
+    background: #0B0F19;
+    border-right: 1px solid #1a1f2e;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 16px 0;
+}
+
+#app-sidebar.open {
+    transform: translateX(0);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.sidebar-nav-item {
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    color: #5C6479;
+    padding: 14px 20px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-nav-item:hover {
+    background-color: rgba(93, 100, 121, 0.1);
+    border-left-color: #00f5a0;
+    color: #f4fbff;
+}
+
+.nav-icon {
+    font-size: 1.1rem;
+}
+
+.nav-label {
+    flex: 1;
+}
+
+/* ============================================================================
+   MAIN CONTENT VIEWPORT
+   ============================================================================ */
+
+#content-viewport {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    background: #0B0F19;
+}
+
+/* PANEL BASE STYLES */
+.app-panel {
+    position: absolute;
+    inset: 0;
+    padding: 20px;
+    overflow-y: auto;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.app-panel.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ============================================================================
+   PANEL 1: CH CORE VIEW
+   ============================================================================ */
+
+#panel-ch-core {
+    background: #FFFFFF;
+    color: #000000;
+}
+
+.ch-core-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 16px;
+}
+
+/* Character Avatar Display */
+.character-display {
+    flex-shrink: 0;
+    height: 280px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #FFFFFF;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 16px 0;
+}
+
+.avatar-canvas {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+#avatar-base {
+    height: 100%;
+    width: auto;
+    object-fit: contain;
+    display: block !important;
+    max-width: 100%;
+    opacity: 1;
+    transition: opacity 0.15s ease;
+}
+
+/* Chat Interface */
+.chat-interface {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+#chat-history {
+    flex: 1;
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chat-message {
+    padding: 10px 14px;
+    border-radius: 6px;
+    word-wrap: break-word;
+    max-width: 85%;
+}
+
+.chat-message.system {
+    background: #e8e8e8;
+    color: #333;
+    align-self: flex-start;
+}
+
+.chat-message.user {
+    background: #007bff;
+    color: #fff;
+    align-self: flex-end;
+}
+
+.chat-message.ai {
+    background: #28a745;
+    color: #fff;
+    align-self: flex-start;
+}
+
+.chat-message p {
+    margin: 0;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid #d0d0d0;
+    border-radius: 24px;
+    padding: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.chat-input {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    color: #000;
+    outline: none;
+    font-family: inherit;
+}
+
+.chat-input::placeholder {
+    color: #999;
+}
+
+.chat-send-btn,
+.chat-mic-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 8px 12px;
+    color: #5C6479;
+    transition: color 0.2s ease;
+}
+
+.chat-send-btn:hover,
+.chat-mic-btn:hover {
+    color: #000;
+}
+
+/* ============================================================================
+   PANEL 2: GOAL TRACKER VIEW
+   ============================================================================ */
+
+#panel-goal-tracker {
+    background: #0B0F19;
+    color: #f4fbff;
+}
+
+.goals-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.goals-wrapper h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.progress-circles-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 24px;
+    margin: 16px 0;
+}
+
+.progress-circle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.circle-svg {
+    width: 120px;
+    height: 120px;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: #1a1f2e;
+    stroke-width: 6;
+}
+
+.circle-progress {
+    fill: none;
+    stroke: #00f5a0;
+    stroke-width: 6;
+    stroke-dasharray: 314;
+    stroke-dashoffset: 314;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s ease;
+}
+
+.circle-label {
+    font-size: 0.9rem;
+    color: #5C6479;
+    font-weight: 500;
+}
+
+.circle-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #00f5a0;
+}
+
+.performance-log {
+    margin-top: 24px;
+}
+
+.performance-log h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.1rem;
+}
+
+.performance-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #11131c;
+    border: 1px solid #1a1f2e;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.performance-table thead {
+    background: #1a1f2e;
+}
+
+.performance-table th {
+    padding: 12px;
+    text-align: left;
+    color: #5C6479;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.performance-table td {
+    padding: 12px;
+    border-top: 1px solid #1a1f2e;
+    color: #f4fbff;
+}
+
+/* ============================================================================
+   PANEL 3: CALENDAR VIEW
+   ============================================================================ */
+
+#panel-calendar {
+    background: #0B0F19;
+    color: #f4fbff;
+}
+
+.calendar-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: #11131c;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.month-nav-btn {
+    background: #00f5a0;
+    color: #0B0F19;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.month-nav-btn:hover {
+    background: #00d68a;
+    transform: translateY(-2px);
+}
+
+.calendar-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+    flex: 1;
+    margin: 0;
+}
+
+.calendar-grid {
+    display: grid;
+    gap: 0;
+}
+
+.calendar-weekday-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.calendar-weekday-header {
+    text-align: center;
+    font-weight: 600;
+    color: #5C6479;
+    padding: 8px;
+    font-size: 0.9rem;
+}
+
+.calendar-day-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.calendar-day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #1a1f2e;
+    border: 1px solid #2a2f3e;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    min-height: 50px;
+    transition: all 0.2s ease;
+    padding: 4px;
+}
+
+.calendar-day-cell:not(.empty):hover {
+    background: #2a2f3e;
+    transform: scale(1.05);
+}
+
+.calendar-day-cell.empty {
+    background: transparent;
+    border: none;
+    cursor: default;
+}
+
+.day-number {
+    font-weight: 600;
+    color: #f4fbff;
+    font-size: 0.9rem;
+}
+
+.task-indicator {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+/* ============================================================================
+   PANEL 4: DISTRACTION TRACKER VIEW
+   ============================================================================ */
+
+#panel-distraction {
+    background: #0B0F19;
+    color: #f4fbff;
+}
+
+.distraction-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.distraction-wrapper h2 {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.distraction-form {
+    background: #11131c;
+    border: 1px solid #1a1f2e;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    color: #5C6479;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.form-group select,
+.form-group input {
+    background: #0B0F19;
+    border: 1px solid #2a2f3e;
+    border-radius: 4px;
+    padding: 10px;
+    color: #f4fbff;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+    outline: none;
+    border-color: #00f5a0;
+    box-shadow: 0 0 8px rgba(0, 245, 160, 0.2);
+}
+
+.submit-btn {
+    background: #00f5a0;
+    color: #0B0F19;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+    background: #00d68a;
+    transform: translateY(-2px);
+}
+
+.distraction-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.metric-card {
+    background: #11131c;
+    border: 1px solid #1a1f2e;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+
+.metric-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 0.95rem;
+    color: #5C6479;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #FF3366;
+    margin: 0;
+}
+
+.distraction-log {
+    background: #11131c;
+    border: 1px solid #1a1f2e;
+    border-radius: 8px;
+    padding: 16px;
+    grid-column: 1 / -1;
+}
+
+.distraction-log h3 {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+}
+
+.distraction-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.distraction-entry {
+    background: #0B0F19;
+    border-left: 3px solid #FF3366;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #f4fbff;
+}
+
+/* ============================================================================
+   PANEL 5: USER PROFILE CONTEXT VIEW
+   ============================================================================ */
+
+#panel-profile {
+    background: #0B0F19;
+    color: #f4fbff;
+}
+
+.profile-wrapper {
+    max-width: 800px;
+}
+
+.profile-wrapper h2 {
+    margin: 0 0 24px 0;
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-section label {
+    color: #5C6479;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.profile-textarea {
+    background: #11131c;
+    border: 1px solid #2a2f3e;
+    border-radius: 6px;
+    padding: 12px;
+    color: #f4fbff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+}
+
+.profile-textarea:focus {
+    outline: none;
+    border-color: #00f5a0;
+    box-shadow: 0 0 8px rgba(0, 245, 160, 0.2);
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0B0F19;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2a2f3e;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #00f5a0;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (min-width: 768px) {
+    .menu-button {
+        display: none;
+    }
+    
+    #app-sidebar {
+        transform: translateX(0);
+    }
+    
+    #content-viewport {
+        left: 260px;
+    }
+    
+    .distraction-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .distraction-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767px) {
+    .app-panel {
+        padding: 16px;
+    }
+    
+    .distraction-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .distraction-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    .performance-table {
+        font-size: 0.85rem;
+    }
+    
+    .performance-table th,
+    .performance-table td {
+        padding: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-title {
+        font-size: 1rem;
+    }
+    
+    .calendar-title {
+        font-size: 1rem;
+    }
+    
+    .progress-circles-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:focus {
+    outline: 2px solid #00f5a0;
+    outline-offset: 2px;
 }
 
 #app-root-viewport {

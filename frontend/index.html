@@ -3,92 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character HUD System</title>
+    <title>Interactive Character Build AI</title>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <div id="app-root-viewport">
-    <!-- STICKY HEADER NAVIGATION BAR -->
-    <header id="app-header-bar">
-        <button id="hamburger-menu-trigger" class="hud-icon-btn">☰</button>
-        <div class="header-branding">
-            <h1>Character HUD</h1>
-        </div>
+    <!-- TOP HEADER BAR -->
+    <header id="top-header-bar">
+        <button id="sidebar-toggle-btn" class="menu-button">☰</button>
+        <h1 class="app-title">Interactive Character Build AI</h1>
     </header>
 
-    <!-- ABSOLUTE COLLAPSIBLE NAVIGATION DRAWER -->
-    <aside id="app-sidebar-drawer">
+    <!-- COLLAPSIBLE LEFT SIDEBAR -->
+    <aside id="app-sidebar">
         <nav class="sidebar-nav">
-            <ul class="nav-list">
-                <li class="nav-item"><button class="nav-link" data-route="ch-core">CH Core</button></li>
-                <li class="nav-item"><button class="nav-link" data-route="goal-tracker">Goal Tracker</button></li>
-                <li class="nav-item"><button class="nav-link" data-route="calendar">Calendar</button></li>
-                <li class="nav-item"><button class="nav-link" data-route="distraction">Distraction Tracker</button></li>
-                <li class="nav-item"><button class="nav-link" data-route="profile">User Profile Context</button></li>
-            </ul>
+            <button class="sidebar-nav-item" data-panel="ch-core">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">CH Core</span>
+            </button>
+            <button class="sidebar-nav-item" data-panel="goal-tracker">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Goal Tracker</span>
+            </button>
+            <button class="sidebar-nav-item" data-panel="calendar">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">Calendar</span>
+            </button>
+            <button class="sidebar-nav-item" data-panel="distraction">
+                <span class="nav-icon">⏰</span>
+                <span class="nav-label">Distraction Tracker</span>
+            </button>
+            <button class="sidebar-nav-item" data-panel="profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">User Profile Context</span>
+            </button>
         </nav>
     </aside>
 
     <!-- MAIN CONTENT VIEWPORT -->
-    <main class="app-main-content">
-        <!-- PANEL: CHARACTER AI -->
-        <section id="panel-character-ai" class="content-panel active-panel">
-            <div id="character-avatar-stage">
-                <img id="avatar-sprite-layer" src="./exp3-proud or satisfied/idle.png" alt="Aoi Hinami">
-            </div>
-            <div class="chat-container">
-                <div id="chat-history-log" class="chat-history-viewport">
-                    <div class="chat-message system-message">
-                        <p>Welcome to Character HUD. Type a message to start.</p>
+    <main id="content-viewport">
+        
+        <!-- PANEL 1: CH CORE VIEW -->
+        <section id="panel-ch-core" class="app-panel">
+            <div class="ch-core-wrapper">
+                <!-- CHARACTER AVATAR STAGE -->
+                <div id="character-display" class="character-display">
+                    <div id="avatar-canvas" class="avatar-canvas">
+                        <img id="avatar-base" src="./exp3-proud or satisfied/idle.png" alt="Character Avatar" class="avatar-layer">
                     </div>
                 </div>
-                <div id="chat-input-dock" class="chat-input-dock">
-                    <input 
-                        id="chat-user-input" 
-                        type="text" 
-                        placeholder="Message..." 
-                        class="chat-input-field"
-                    >
-                    <button id="chat-mic-btn" class="chat-action-btn">🎙️</button>
-                    <button id="chat-send-btn" class="chat-action-btn">➔</button>
+                
+                <!-- CHAT INTERFACE -->
+                <div class="chat-interface">
+                    <div id="chat-history" class="chat-history">
+                        <div class="chat-message system">
+                            <p>Welcome to Interactive Character Build AI. I'm here to help you build your performance targets.</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input 
+                            type="text" 
+                            id="chat-input" 
+                            class="chat-input" 
+                            placeholder="Type your message..." 
+                            autocomplete="off"
+                        >
+                        <button id="chat-send-btn" class="chat-send-btn">➔</button>
+                        <button id="chat-mic-btn" class="chat-mic-btn">🎙️</button>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- PANEL: CALENDAR -->
-        <section id="panel-calendar" class="content-panel">
+        <!-- PANEL 2: GOAL TRACKER VIEW -->
+        <section id="panel-goal-tracker" class="app-panel hidden">
+            <div class="goals-wrapper">
+                <h2>Goal Tracking Dashboard</h2>
+                <div class="progress-circles-container">
+                    <div class="progress-circle">
+                        <svg viewBox="0 0 120 120" class="circle-svg">
+                            <circle cx="60" cy="60" r="50" class="circle-bg"/>
+                            <circle cx="60" cy="60" r="50" class="circle-progress" id="daily-progress"/>
+                        </svg>
+                        <div class="circle-label">Daily Target</div>
+                        <div class="circle-value" id="daily-value">0%</div>
+                    </div>
+                    <div class="progress-circle">
+                        <svg viewBox="0 0 120 120" class="circle-svg">
+                            <circle cx="60" cy="60" r="50" class="circle-bg"/>
+                            <circle cx="60" cy="60" r="50" class="circle-progress" id="midterm-progress"/>
+                        </svg>
+                        <div class="circle-label">Mid-Term Target</div>
+                        <div class="circle-value" id="midterm-value">0%</div>
+                    </div>
+                    <div class="progress-circle">
+                        <svg viewBox="0 0 120 120" class="circle-svg">
+                            <circle cx="60" cy="60" r="50" class="circle-bg"/>
+                            <circle cx="60" cy="60" r="50" class="circle-progress" id="endgoal-progress"/>
+                        </svg>
+                        <div class="circle-label">End Goal</div>
+                        <div class="circle-value" id="endgoal-value">0%</div>
+                    </div>
+                </div>
+                <div class="performance-log">
+                    <h3>Performance Log</h3>
+                    <table id="performance-table" class="performance-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Tasks Completed</th>
+                                <th>Check-in Hours</th>
+                                <th>Rewards Claimed</th>
+                            </tr>
+                        </thead>
+                        <tbody id="performance-tbody">
+                            <!-- Populated by app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL 3: CALENDAR VIEW -->
+        <section id="panel-calendar" class="app-panel hidden">
             <div class="calendar-wrapper">
-                <div class="calendar-header">
-                    <button id="calendar-prev-month" class="calendar-nav-btn">◀</button>
-                    <h3 id="calendar-month-year" class="calendar-month-display">May 2026</h3>
-                    <button id="calendar-next-month" class="calendar-nav-btn">▶</button>
+                <div class="calendar-controls">
+                    <button id="prev-month-btn" class="month-nav-btn">◀ Previous</button>
+                    <h2 id="calendar-month-year" class="calendar-title">May 2026</h2>
+                    <button id="next-month-btn" class="month-nav-btn">Next ▶</button>
                 </div>
-                <div id="calendar-days-matrix" class="calendar-grid"></div>
+                <div id="calendar-grid" class="calendar-grid">
+                    <!-- Populated by app.js -->
+                </div>
             </div>
         </section>
 
-        <!-- PANEL: GOAL TRACKER -->
-        <section id="panel-goal-tracker" class="content-panel">
-            <h2>Goal Tracker</h2>
-            <p>Goal tracking panel content</p>
+        <!-- PANEL 4: DISTRACTION TRACKER VIEW -->
+        <section id="panel-distraction" class="app-panel hidden">
+            <div class="distraction-wrapper">
+                <h2>Distraction Tracker</h2>
+                <form id="distraction-form" class="distraction-form">
+                    <div class="form-group">
+                        <label for="distraction-type">Type of Distraction:</label>
+                        <select id="distraction-type" required>
+                            <option value="">-- Select --</option>
+                            <option value="social">Social Media</option>
+                            <option value="browsing">Web Browsing</option>
+                            <option value="gaming">Gaming</option>
+                            <option value="messaging">Messaging</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="distraction-date">Date:</label>
+                        <input type="date" id="distraction-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="distraction-time">Time:</label>
+                        <input type="time" id="distraction-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="distraction-duration">Duration (minutes):</label>
+                        <input type="number" id="distraction-duration" min="1" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Log Distraction</button>
+                </form>
+                <div class="distraction-metrics">
+                    <div class="metric-card">
+                        <h3>Today's Distractions</h3>
+                        <p class="metric-value" id="daily-distraction-count">0</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Weekly Distractions</h3>
+                        <p class="metric-value" id="weekly-distraction-count">0</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Monthly Distractions</h3>
+                        <p class="metric-value" id="monthly-distraction-count">0</p>
+                    </div>
+                </div>
+                <div id="distraction-log" class="distraction-log">
+                    <h3>Recent Logs</h3>
+                    <div id="distraction-entries" class="distraction-entries">
+                        <!-- Populated by app.js -->
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <!-- PANEL: DISTRACTION TRACKER -->
-        <section id="panel-distraction" class="content-panel">
-            <h2>Distraction Tracker</h2>
-            <p>Distraction tracking panel content</p>
+        <!-- PANEL 5: USER PROFILE CONTEXT VIEW -->
+        <section id="panel-profile" class="app-panel hidden">
+            <div class="profile-wrapper">
+                <h2>User Profile Context</h2>
+                <form id="profile-form" class="profile-form">
+                    <div class="form-section">
+                        <label for="academic-details">Academic Details:</label>
+                        <textarea 
+                            id="academic-details" 
+                            class="profile-textarea" 
+                            placeholder="Course, semester, subject focus areas..."
+                            rows="4"
+                        ></textarea>
+                    </div>
+                    <div class="form-section">
+                        <label for="routine-constraints">Routine Constraints:</label>
+                        <textarea 
+                            id="routine-constraints" 
+                            class="profile-textarea" 
+                            placeholder="Exam strategies, free hours, fixed duties..."
+                            rows="4"
+                        ></textarea>
+                    </div>
+                    <div class="form-section">
+                        <label for="physical-metrics">Physical Metrics:</label>
+                        <textarea 
+                            id="physical-metrics" 
+                            class="profile-textarea" 
+                            placeholder="Calisthenics goals, fitness targets..."
+                            rows="4"
+                        ></textarea>
+                    </div>
+                    <div class="form-section">
+                        <label for="lifestyle-regimen">Skincare & Diet Regimens:</label>
+                        <textarea 
+                            id="lifestyle-regimen" 
+                            class="profile-textarea" 
+                            placeholder="Diet plans, skincare routine, health goals..."
+                            rows="4"
+                        ></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Save to Cloud</button>
+                </form>
+            </div>
         </section>
 
-        <!-- PANEL: USER PROFILE -->
-        <section id="panel-profile" class="content-panel">
-            <h2>User Profile Context</h2>
-            <p>User profile panel content</p>
-        </section>
     </main>
-    </div>
+
+    <!-- SCRIPTS -->
     <script src="config.js"></script>
     <script src="app.js"></script>
-</body>
-</html>
 </body>
 </html>
