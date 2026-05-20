@@ -12,6 +12,7 @@ const UIState = {
     currentYear: 2026,
     currentMonth: 4, // 0-indexed (May = 4),
     taskMetrics: {}, // Will store task counts by date
+    characterAnimator: null, // Will be initialized with CharacterLayerAnimator
 };
 
 const MONTH_NAMES = [
@@ -29,7 +30,41 @@ const DOM_REFS = {
     prevMonthBtn: document.getElementById('prev-month-btn'),
     nextMonthBtn: document.getElementById('next-month-btn'),
     calendarMonthDisplay: document.getElementById('calendar-month-display'),
+    characterLayer: document.getElementById('character-animation-layer'),
+    exprButtons: document.querySelectorAll('.expr-btn'),
+    reactionButtons: document.querySelectorAll('.reaction-btn'),
 };
+
+// ============================================================================
+// CHARACTER LAYER ANIMATOR INITIALIZATION
+// ============================================================================
+
+/**
+ * Initialize character animation layer
+ */
+function initCharacterAnimator() {
+    if (typeof CharacterLayerAnimator !== 'undefined' && DOM_REFS.characterLayer) {
+        UIState.characterAnimator = new CharacterLayerAnimator('#character-animation-layer');
+        
+        // Attach expression button handlers
+        DOM_REFS.exprButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const expression = btn.getAttribute('data-expr');
+                UIState.characterAnimator.setExpression(expression);
+            });
+        });
+
+        // Attach reaction button handlers
+        DOM_REFS.reactionButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const reaction = btn.getAttribute('data-reaction');
+                UIState.characterAnimator.triggerReaction(reaction);
+            });
+        });
+
+        console.log('✅ Character Animator initialized');
+    }
+}
 
 // ============================================================================
 // SIDEBAR & NAVIGATION ROUTING
@@ -146,7 +181,7 @@ function renderCalendarMonth() {
     grid.appendChild(headerRow);
 
     // Create day cells
-    const calendarWeekRow = document.createElement('div');
+    let calendarWeekRow = document.createElement('div');
     calendarWeekRow.className = 'calendar-week-row';
 
     // Add empty cells for days before month starts
@@ -187,9 +222,8 @@ function renderCalendarMonth() {
         // Start new week row after Saturday
         if ((firstDay + day) % 7 === 0) {
             grid.appendChild(calendarWeekRow);
-            const newRow = document.createElement('div');
-            newRow.className = 'calendar-week-row';
-            calendarWeekRow = newRow;
+            calendarWeekRow = document.createElement('div');
+            calendarWeekRow.className = 'calendar-week-row';
         }
     }
 
@@ -269,6 +303,7 @@ function initializeUIEngine() {
     initHamburgerToggle();
     initNavigation();
     initCalendarNavigation();
+    initCharacterAnimator();
 
     // Initial render
     renderCalendarMonth();

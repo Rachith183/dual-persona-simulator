@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Character HUD Dashboard</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="layer-animations.css">
 </head>
 <body>
     <!-- Top Navigation Header Bar -->
@@ -43,8 +44,45 @@
             <div class="panel-header">
                 <h2>CH Core</h2>
             </div>
-            <div class="panel-content">
-                <p>Character HUD Core Interface</p>
+            <div class="panel-content monochrome-panel">
+                <div class="character-core-wrapper">
+                    <div id="character-animation-layer" class="character-layer">
+                        <div class="layer-container">
+                            <!-- Base Layer -->
+                            <div class="character-sprite layer-base"></div>
+                            
+                            <!-- Expression Layers -->
+                            <div class="character-sprite layer-eye-left"></div>
+                            <div class="character-sprite layer-eye-right"></div>
+                            <div class="character-sprite layer-mouth"></div>
+                            
+                            <!-- Accessory Layers -->
+                            <div class="character-sprite layer-hair-back"></div>
+                            <div class="character-sprite layer-hair-strand"></div>
+                            <div class="character-sprite layer-bang"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="character-controls">
+                        <div class="control-group">
+                            <h3>Expression Controls</h3>
+                            <button class="expr-btn" data-expr="smiling">Smiling</button>
+                            <button class="expr-btn" data-expr="angry">Angry</button>
+                            <button class="expr-btn" data-expr="thinking">Thinking</button>
+                            <button class="expr-btn" data-expr="focused">Focused</button>
+                            <button class="expr-btn" data-expr="surprised">Surprised</button>
+                            <button class="expr-btn" data-expr="neutral">Neutral</button>
+                        </div>
+                        
+                        <div class="control-group">
+                            <h3>Reaction Test</h3>
+                            <button class="reaction-btn" data-reaction="happy">😄 Happy</button>
+                            <button class="reaction-btn" data-reaction="sad">😢 Sad</button>
+                            <button class="reaction-btn" data-reaction="confused">🤔 Confused</button>
+                            <button class="reaction-btn" data-reaction="excited">🎉 Excited</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -124,10 +162,9 @@
         </section>
     </main>
 
-    <!-- Character Animation Layer (optional integration) -->
-    <div id="character-animation-layer" class="character-layer"></div>
-
+    <!-- Scripts in order of dependency -->
     <script src="config.js"></script>
+    <script src="layer-animator.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -179,6 +179,11 @@ html, body {
     color: #000000;
 }
 
+.monochrome-panel {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+}
+
 /* Standard panels - dark background */
 #panel-goal-tracker,
 #panel-calendar,
@@ -190,11 +195,15 @@ html, body {
 
 .panel-header {
     margin-bottom: 30px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     padding-bottom: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+#panel-ch-core .panel-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .panel-header h2 {
@@ -213,6 +222,80 @@ html, body {
     background-color: rgba(255, 255, 255, 0.02);
     border-radius: 8px;
     padding: 20px;
+}
+
+#panel-ch-core .panel-content {
+    background-color: transparent;
+}
+
+/* ============================================================================
+   CHARACTER CORE SECTION - MONOCHROME HUD
+   ============================================================================ */
+
+.character-core-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+#character-animation-layer {
+    background-color: rgba(0, 0, 0, 0.03);
+    border: 2px solid #000000;
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.character-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.control-group {
+    background-color: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.control-group h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+    color: #000000;
+    font-weight: 600;
+}
+
+.expr-btn,
+.reaction-btn {
+    background-color: #000000;
+    color: #FFFFFF;
+    border: 1px solid #000000;
+    padding: 10px 16px;
+    margin: 5px 0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.expr-btn:hover,
+.reaction-btn:hover {
+    background-color: #333333;
+    transform: translateX(3px);
+}
+
+.expr-btn:active,
+.reaction-btn:active {
+    background-color: #000000;
+    transform: translateX(0);
 }
 
 /* ============================================================================
@@ -444,6 +527,10 @@ html, body {
     }
 
     .goals-container {
+        grid-template-columns: 1fr;
+    }
+
+    .character-core-wrapper {
         grid-template-columns: 1fr;
     }
 }
