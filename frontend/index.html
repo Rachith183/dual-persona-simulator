@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
+    <div id="app-root-viewport">
     <!-- STICKY HEADER NAVIGATION BAR -->
     <header id="app-header-bar">
         <button id="hamburger-menu-trigger" class="hud-icon-btn">☰</button>
@@ -32,6 +33,9 @@
     <main class="app-main-content">
         <!-- PANEL: CHARACTER AI -->
         <section id="panel-character-ai" class="content-panel active-panel">
+            <div id="character-avatar-stage">
+                <img id="avatar-sprite-layer" src="./exp3-proud or satisfied/idle.png" alt="Aoi Hinami">
+            </div>
             <div class="chat-container">
                 <div id="chat-history-log" class="chat-history-viewport">
                     <div class="chat-message system-message">
@@ -81,8 +85,10 @@
             <p>User profile panel content</p>
         </section>
     </main>
-
+    </div>
     <script src="config.js"></script>
     <script src="app.js"></script>
+</body>
+</html>
 </body>
 </html>

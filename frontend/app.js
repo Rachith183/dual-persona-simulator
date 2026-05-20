@@ -301,6 +301,46 @@ function initChatHandlers() {
 }
 
 // ============================================================================
+// VISIBILITY STATE & SPRITE FALLBACK
+// ============================================================================
+
+/**
+ * Ensure main panel is visible on boot
+ */
+function ensureInitialVisibility() {
+    const mainPanel = document.getElementById('panel-character-ai');
+    if (mainPanel) {
+        mainPanel.classList.remove('hidden');
+        mainPanel.classList.add('active-panel');
+        console.log('✅ Character panel visibility enforced');
+    }
+}
+
+/**
+ * Fallback sprite loader for avatar stage
+ * If Firestore fails, defaults to exp3-proud or satisfied
+ */
+function loadAvatarSprite() {
+    const avatarLayer = document.getElementById('avatar-sprite-layer');
+    if (!avatarLayer) return;
+    
+    // Attempt to load default avatar
+    const defaultSpriteUrl = './exp3-proud or satisfied/idle.png';
+    
+    avatarLayer.onerror = () => {
+        console.warn('⚠️ Avatar sprite failed to load, attempting fallback...');
+        avatarLayer.src = defaultSpriteUrl;
+    };
+    
+    // Ensure sprite is loaded
+    avatarLayer.src = avatarLayer.src || defaultSpriteUrl;
+    
+    avatarLayer.onload = () => {
+        console.log('✅ Avatar sprite loaded successfully');
+    };
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 
@@ -309,6 +349,10 @@ function initChatHandlers() {
  */
 function initializeApp() {
     console.log('🚀 Initializing Character HUD System');
+    
+    // Ensure visibility state
+    ensureInitialVisibility();
+    loadAvatarSprite();
     
     initHamburgerMenu();
     initNavigation();
@@ -327,7 +371,6 @@ if (document.readyState === 'loading') {
 } else {
     initializeApp();
 }
-const scValue = document.querySelector("#sc-value");
 const stabilityMeter = document.querySelector("#stability-meter");
 const puppetFaceOverlay = document.querySelector(".puppet-face-overlay");
 const puppetEyes = document.querySelectorAll(".puppet-eye");
