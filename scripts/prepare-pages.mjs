@@ -17,6 +17,6 @@ await cp(path.join(rootDirectory, "frontend"), outputDirectory, {
   recursive: true
 });
 
-await cp(path.join(rootDirectory, "layers"), path.join(outputDirectory, "layers"), {
+await cp(path.join(rootDirectory, "layers expression"), path.join(outputDirectory, "layers"), {
   recursive: true
 });

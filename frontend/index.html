@@ -1,104 +1,133 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Interactive Character Build AI">
-    <title>Interactive Character Build AI</title>
-    <link rel="stylesheet" href="./style.css">
-  </head>
-  <body>
-    <main class="vtuber-interface-container" aria-label="Interactive Character Build AI">
-      <section class="hud-overlay" aria-label="Simulation metrics">
-        <div class="hud-block">
-          <span class="hud-label">XP</span>
-          <span class="hud-value" id="xp-value">0</span>
-        </div>
-        <div class="hud-block">
-          <span class="hud-label">SC</span>
-          <span class="hud-value" id="sc-value">0</span>
-        </div>
-        <div class="hud-block hud-stability">
-          <label class="hud-label" for="stability-meter">Psychological Stability</label>
-          <progress id="stability-meter" class="stability-meter" value="82" max="100">82</progress>
-        </div>
-      </section>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character HUD Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Top Navigation Header Bar -->
+    <header id="top-header-bar">
+        <button id="sidebar-toggle-btn" class="hamburger-btn">☰</button>
+        <h1 class="dashboard-title">Character HUD System</h1>
+    </header>
 
-      <section class="character-build-stage" aria-label="Character build stage">
-        <div class="character-viewport state-analytical" aria-label="2.5D character rig">
-          <img class="layer-bg rig-layer" src="./layers/baground.png" alt="">
-          <img class="layer-left-hair-back rig-layer tracking-layer" src="./layers/left hair back.png" alt="">
-          <img class="layer-right-hair-back rig-layer tracking-layer" src="./layers/right hair back.png" alt="">
-          <img class="layer-body rig-layer tracking-layer breathing-layer" src="./layers/base.png" alt="">
-          <img class="layer-face-base rig-layer tracking-layer breathing-layer" src="./layers/faceless.png" alt="">
-          <img class="layer-mouth rig-layer tracking-layer breathing-layer" src="./layers/mouth.png" alt="">
-          <img class="layer-left-eye rig-layer tracking-layer breathing-layer" src="./layers/left eye.png" alt="">
-          <img class="layer-right-eye rig-layer tracking-layer breathing-layer" src="./layers/right eye.png" alt="">
-          <img class="layer-left-strand rig-layer tracking-layer" src="./layers/left strand hair.png" alt="">
-          <img class="layer-right-strand rig-layer tracking-layer" src="./layers/right strand hair.png" alt="">
-          <img class="layer-bangs rig-layer tracking-layer" src="./layers/bang.png" alt="Dual persona character rig">
+    <!-- Collapsible Left Sidebar Wrapper -->
+    <aside id="app-sidebar">
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item" data-panel="panel-ch-core">
+                    <button class="nav-btn">CH Core</button>
+                </li>
+                <li class="nav-item" data-panel="panel-goal-tracker">
+                    <button class="nav-btn">Goal Tracker</button>
+                </li>
+                <li class="nav-item" data-panel="panel-calendar">
+                    <button class="nav-btn">Calendar</button>
+                </li>
+                <li class="nav-item" data-panel="panel-distraction">
+                    <button class="nav-btn">Distraction Tracker</button>
+                </li>
+                <li class="nav-item" data-panel="panel-profile">
+                    <button class="nav-btn">User Profile Context</button>
+                </li>
+            </ul>
+        </nav>
+    </aside>
 
-        </div>
-      </section>
-
-      <section class="control-deck" aria-label="Diagnostic and execution controls">
-        <article class="dialogue-terminal" aria-label="Dialogue terminal">
-          <div class="terminal-text">
-            <p class="terminal-label">Dialogue</p>
-            <div class="character-dialogue" aria-live="polite">
-              State the primary life vector you want optimized. One target. No decorative language.
+    <!-- Main Content Viewport Wrapper -->
+    <main id="main-content">
+        <!-- Panel 1: CH Core -->
+        <section id="panel-ch-core" class="app-panel active">
+            <div class="panel-header">
+                <h2>CH Core</h2>
             </div>
-            <p class="terminal-label">Session Stage</p>
-            <div class="session-stage-state" aria-live="polite">STAGE_1_DESIRE</div>
-            <p class="terminal-label">Internal State</p>
-            <div class="internal-thinking-state" aria-live="polite">
-              Intake layer active. Awaiting measurable desire signal.
+            <div class="panel-content">
+                <p>Character HUD Core Interface</p>
             </div>
-            <form class="chat-input-form" aria-label="Manual dialogue input">
-              <input id="chat-text-input" class="chat-text-input" type="text" autocomplete="off" placeholder="Enter target, constraints, or available hours">
-              <button class="chat-submit" type="submit">Send</button>
-              <button id="mic-toggle-btn" class="mic-toggle-btn" type="button" aria-pressed="false" aria-label="Toggle microphone input">Mic</button>
-            </form>
-          </div>
-          <div class="goals-hierarchy-container" aria-label="Hierarchical goals">
-            <p class="terminal-label">Long-Term Goals</p>
-            <ul class="goal-list long-term-goals"></ul>
-            <p class="terminal-label">Mid-Term Goals</p>
-            <ul class="goal-list mid-term-goals"></ul>
-            <p class="terminal-label">Daily Routines</p>
-            <ul class="goal-list daily-routines"></ul>
-          </div>
-        </article>
+        </section>
 
-        <aside class="scan-upload-panel" aria-label="Academic scan upload">
-          <label class="scan-label" for="gemini-api-key-input">Free Gemini Browser Mode</label>
-          <input class="scan-file-input" id="gemini-api-key-input" type="password" autocomplete="off" placeholder="Paste Gemini API key for this browser">
-          <button class="scan-submit" id="save-api-key-btn" type="button">Save Key</button>
-          <p class="scan-status api-key-status" aria-live="polite">No browser key saved. Offline mode is active.</p>
-          <label class="scan-label" for="scan-file">Academic Scanner</label>
-          <input class="scan-file-input" id="scan-file" name="document" type="file" accept=".pdf,.txt,.md,.doc,.docx,.png,.jpg,.jpeg">
-          <button class="scan-submit" type="button">Scan Document</button>
-          <p class="scan-status" aria-live="polite">No document queued.</p>
-        </aside>
-      </section>
+        <!-- Panel 2: Goal Tracker -->
+        <section id="panel-goal-tracker" class="app-panel hidden">
+            <div class="panel-header">
+                <h2>Goal Tracker</h2>
+            </div>
+            <div class="panel-content">
+                <div class="goals-container">
+                    <div class="goal-section">
+                        <h3>Long-term Goals</h3>
+                        <ul id="long-term-goals-list"></ul>
+                    </div>
+                    <div class="goal-section">
+                        <h3>Mid-term Goals</h3>
+                        <ul id="mid-term-goals-list"></ul>
+                    </div>
+                    <div class="goal-section">
+                        <h3>Daily Targets</h3>
+                        <ul id="daily-targets-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-      <section class="execution-dashboard" aria-label="Execution dashboard">
-        <div class="time-blocks-container">
-          <p class="terminal-label">Time Blocks</p>
-          <div class="time-blocks-list"></div>
-        </div>
-        <div class="active-quests-container">
-          <p class="terminal-label">Active Quests</p>
-          <div class="active-quests-list"></div>
-        </div>
-        <div class="rewards-shop-container">
-          <p class="terminal-label">Rewards Shop</p>
-          <div class="rewards-shop-list"></div>
-        </div>
-      </section>
+        <!-- Panel 3: Compressed Calendar Sheet -->
+        <section id="panel-calendar" class="app-panel hidden">
+            <div class="panel-header">
+                <h2>Calendar</h2>
+                <div class="calendar-month-display" id="calendar-month-display">May 2026</div>
+            </div>
+            <div class="panel-content">
+                <div class="calendar-controls">
+                    <button id="prev-month-btn" class="calendar-nav-btn">◀ Previous</button>
+                    <button id="next-month-btn" class="calendar-nav-btn">Next ▶</button>
+                </div>
+                <div id="calendar-grid" class="calendar-grid-wrapper">
+                    <!-- Calendar days will be generated here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel 4: Distraction Tracker -->
+        <section id="panel-distraction" class="app-panel hidden">
+            <div class="panel-header">
+                <h2>Distraction Tracker</h2>
+            </div>
+            <div class="panel-content">
+                <div class="distraction-metrics">
+                    <p>Track interruptions and focus sessions</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel 5: User Profile Context -->
+        <section id="panel-profile" class="app-panel hidden">
+            <div class="panel-header">
+                <h2>User Profile Context</h2>
+            </div>
+            <div class="panel-content">
+                <div class="profile-details">
+                    <div class="profile-field">
+                        <label>Academic Details:</label>
+                        <p id="academic-info">Not set</p>
+                    </div>
+                    <div class="profile-field">
+                        <label>Routine Constraints:</label>
+                        <p id="routine-info">Not set</p>
+                    </div>
+                    <div class="profile-field">
+                        <label>Physical Metrics:</label>
+                        <p id="metrics-info">Not set</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <script src="./config.js"></script>
-    <script src="./app.js" defer></script>
-  </body>
+    <!-- Character Animation Layer (optional integration) -->
+    <div id="character-animation-layer" class="character-layer"></div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
 </html>
