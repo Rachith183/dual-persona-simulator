@@ -795,6 +795,29 @@ button:focus {
     outline-offset: 2px;
 }
 
+/* ============================================================================
+   ANIMATION LAYERS: MOUTH & EYE
+   ============================================================================ */
+
+.mouth-layer,
+.eye-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    transition: opacity 0.05s ease-out;
+}
+
+.mouth-layer {
+    z-index: 51;
+}
+
+.eye-layer {
+    z-index: 52;
+}
+
 #app-root-viewport {
     display: flex;
     flex-direction: column;

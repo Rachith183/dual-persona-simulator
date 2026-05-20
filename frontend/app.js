@@ -327,6 +327,35 @@ function switchAvatarExpression(expressionState) {
 // ============================================================================
 
 /**
+ * Generate audio from text and play with animation sync
+ */
+async function generateAndPlayAudio(text) {
+    try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        // Estimate duration: ~150ms per word + buffer
+        const wordCount = text.split(' ').length;
+        const estimatedDuration = (wordCount * 0.15) + 0.5;
+        
+        utterance.onstart = () => {
+            startSpeechAnimation(estimatedDuration);
+        };
+        
+        utterance.onend = () => {
+            stopSpeechAnimation();
+        };
+        
+        speechSynthesis.speak(utterance);
+        
+    } catch (error) {
+        console.error('Audio generation error:', error);
+    }
+}
+
+/**
  * Send chat message and get Gemini response
  */
 async function handleChatSend() {
@@ -362,6 +391,9 @@ async function handleChatSend() {
             if (response.current_expression_state) {
                 switchAvatarExpression(response.current_expression_state);
             }
+            
+            // Generate and play audio response with animation
+            await generateAndPlayAudio(response.character_dialogue);
             
             // Auto-scroll
             if (DOM.chatHistory) {
@@ -563,6 +595,261 @@ function updateGoalProgress() {
 }
 
 // ============================================================================
+// ANIMATION ENGINE: AUDIO-DRIVEN MOUTH & EYE ANIMATION
+// ============================================================================
+
+const AnimationState = {
+    // Mouth animation
+    mouthClosed: { opacity: 1.0 },
+    mouthMiddling: { opacity: 0.0 },
+    mouthOpen: { opacity: 0.0 },
+    
+    // Eye animation & emotion
+    eyeOpen: { opacity: 1.0 },
+    eyeAnnoyed: { opacity: 0.0 },
+    eyeHalfClosed: { opacity: 0.0 },
+    
+    // Blinking state
+    isBlinking: false,
+    blinkCycle: 0,
+    blinkDuration: 150, // ms
+    blinkInterval: 3000, // 7-BPM = ~3000ms between blinks
+    lastBlinkTime: 0,
+    
+    // Speech state
+    isSpeaking: false,
+    currentAudioDuration: 0,
+    animationStartTime: 0,
+    mouthCycleProgress: 0,
+    
+    // Animation loop
+    animationFrameId: null,
+    lastFrameTime: 0,
+};
+
+/**
+ * Linear interpolation (Lerp) helper
+ */
+function lerp(current, target, factor = 0.1) {
+    return current + (target - current) * factor;
+}
+
+/**
+ * Update mouth layer opacities for phonetic animation
+ */
+function updateMouthLayers() {
+    if (!document.getElementById('mouth-closed')) {
+        const mouthContainer = document.getElementById('avatar-canvas');
+        if (mouthContainer) {
+            const closedImg = document.createElement('img');
+            closedImg.id = 'mouth-closed';
+            closedImg.src = './mouth(use for speaking animation and expression and generation)/mouth_closed.png';
+            closedImg.className = 'mouth-layer';
+            closedImg.style.opacity = '1';
+            mouthContainer.appendChild(closedImg);
+            
+            const middlingImg = document.createElement('img');
+            middlingImg.id = 'mouth-middling';
+            middlingImg.src = './mouth(use for speaking animation and expression and generation)/mouth_middling.png';
+            middlingImg.className = 'mouth-layer';
+            middlingImg.style.opacity = '0';
+            mouthContainer.appendChild(middlingImg);
+            
+            const openImg = document.createElement('img');
+            openImg.id = 'mouth-open';
+            openImg.src = './mouth(use for speaking animation and expression and generation)/mouth_open.png';
+            openImg.className = 'mouth-layer';
+            openImg.style.opacity = '0';
+            mouthContainer.appendChild(openImg);
+        }
+    }
+    
+    const mouthClosed = document.getElementById('mouth-closed');
+    const mouthMiddling = document.getElementById('mouth-middling');
+    const mouthOpen = document.getElementById('mouth-open');
+    
+    if (mouthClosed) mouthClosed.style.opacity = AnimationState.mouthClosed.opacity.toFixed(2);
+    if (mouthMiddling) mouthMiddling.style.opacity = AnimationState.mouthMiddling.opacity.toFixed(2);
+    if (mouthOpen) mouthOpen.style.opacity = AnimationState.mouthOpen.opacity.toFixed(2);
+}
+
+/**
+ * Update eye layer opacities for emotion and blinking
+ */
+function updateEyeLayers() {
+    if (!document.getElementById('eye-open')) {
+        const eyeContainer = document.getElementById('avatar-canvas');
+        if (eyeContainer) {
+            const openImg = document.createElement('img');
+            openImg.id = 'eye-open';
+            openImg.src = './eyes (  use blinking animation and expression  and emotiongeneration)/full opened eye.png';
+            openImg.className = 'eye-layer';
+            openImg.style.opacity = '1';
+            eyeContainer.appendChild(openImg);
+            
+            const annoyedImg = document.createElement('img');
+            annoyedImg.id = 'eye-annoyed';
+            annoyedImg.src = './eyes (  use blinking animation and expression  and emotiongeneration)/annoyed_eye.png';
+            annoyedImg.className = 'eye-layer';
+            annoyedImg.style.opacity = '0';
+            eyeContainer.appendChild(annoyedImg);
+            
+            const halfClosedImg = document.createElement('img');
+            halfClosedImg.id = 'eye-half-closed';
+            halfClosedImg.src = './eyes (  use blinking animation and expression  and emotiongeneration)/half closed eye.png';
+            halfClosedImg.className = 'eye-layer';
+            halfClosedImg.style.opacity = '0';
+            eyeContainer.appendChild(halfClosedImg);
+        }
+    }
+    
+    const eyeOpen = document.getElementById('eye-open');
+    const eyeAnnoyed = document.getElementById('eye-annoyed');
+    const eyeHalfClosed = document.getElementById('eye-half-closed');
+    
+    if (eyeOpen) eyeOpen.style.opacity = AnimationState.eyeOpen.opacity.toFixed(2);
+    if (eyeAnnoyed) eyeAnnoyed.style.opacity = AnimationState.eyeAnnoyed.opacity.toFixed(2);
+    if (eyeHalfClosed) eyeHalfClosed.style.opacity = AnimationState.eyeHalfClosed.opacity.toFixed(2);
+}
+
+/**
+ * Phonetic mouth animation cycle (3 stages)
+ */
+function updatePhoneticMouthCycle(progress) {
+    const cyclePhase = progress % 1.0;
+    const lerpFactor = 0.25;
+    
+    if (cyclePhase < 0.33) {
+        AnimationState.mouthClosed.opacity = lerp(AnimationState.mouthClosed.opacity, 0.0, lerpFactor);
+        AnimationState.mouthMiddling.opacity = lerp(AnimationState.mouthMiddling.opacity, 0.3, lerpFactor);
+        AnimationState.mouthOpen.opacity = lerp(AnimationState.mouthOpen.opacity, 0.7, lerpFactor);
+    } else if (cyclePhase < 0.66) {
+        AnimationState.mouthOpen.opacity = lerp(AnimationState.mouthOpen.opacity, 0.1, lerpFactor);
+        AnimationState.mouthMiddling.opacity = lerp(AnimationState.mouthMiddling.opacity, 0.9, lerpFactor);
+        AnimationState.mouthClosed.opacity = lerp(AnimationState.mouthClosed.opacity, 0.0, lerpFactor);
+    } else {
+        AnimationState.mouthMiddling.opacity = lerp(AnimationState.mouthMiddling.opacity, 0.2, lerpFactor);
+        AnimationState.mouthClosed.opacity = lerp(AnimationState.mouthClosed.opacity, 0.8, lerpFactor);
+        AnimationState.mouthOpen.opacity = lerp(AnimationState.mouthOpen.opacity, 0.0, lerpFactor);
+    }
+}
+
+/**
+ * Blink animation (7-BPM cycle)
+ */
+function updateBlinkAnimation(currentTime) {
+    const timeSinceLastBlink = currentTime - AnimationState.lastBlinkTime;
+    
+    if (timeSinceLastBlink >= AnimationState.blinkInterval) {
+        AnimationState.isBlinking = true;
+        AnimationState.blinkCycle = 0;
+        AnimationState.lastBlinkTime = currentTime;
+    }
+    
+    if (AnimationState.isBlinking) {
+        const blinkProgress = (AnimationState.blinkCycle / AnimationState.blinkDuration) * 2;
+        
+        if (blinkProgress < 1.0) {
+            AnimationState.eyeOpen.opacity = lerp(AnimationState.eyeOpen.opacity, 0.0, 0.15);
+            AnimationState.eyeHalfClosed.opacity = lerp(AnimationState.eyeHalfClosed.opacity, 1.0, 0.15);
+        } else {
+            AnimationState.eyeHalfClosed.opacity = lerp(AnimationState.eyeHalfClosed.opacity, 0.0, 0.15);
+            AnimationState.eyeOpen.opacity = lerp(AnimationState.eyeOpen.opacity, 1.0, 0.15);
+        }
+        
+        AnimationState.blinkCycle += 16;
+        if (AnimationState.blinkCycle >= AnimationState.blinkDuration * 2) {
+            AnimationState.isBlinking = false;
+            AnimationState.eyeOpen.opacity = 1.0;
+            AnimationState.eyeHalfClosed.opacity = 0.0;
+        }
+    }
+}
+
+/**
+ * Update emotion state based on distraction count
+ */
+function updateEmotionState() {
+    const distractionCount = AppState.userDistractions.filter(
+        d => d.date === new Date().toISOString().split('T')[0]
+    ).length;
+    
+    const threshold = 2;
+    const lerpFactor = 0.1;
+    
+    if (distractionCount >= threshold) {
+        AnimationState.eyeOpen.opacity = lerp(AnimationState.eyeOpen.opacity, 0.0, lerpFactor);
+        AnimationState.eyeAnnoyed.opacity = lerp(AnimationState.eyeAnnoyed.opacity, 1.0, lerpFactor);
+    } else {
+        AnimationState.eyeOpen.opacity = lerp(AnimationState.eyeOpen.opacity, 1.0, lerpFactor);
+        AnimationState.eyeAnnoyed.opacity = lerp(AnimationState.eyeAnnoyed.opacity, 0.0, lerpFactor);
+    }
+}
+
+/**
+ * Main animation loop (requestAnimationFrame)
+ */
+function animationLoop(currentTime) {
+    AnimationState.lastFrameTime = currentTime;
+    
+    updateEmotionState();
+    
+    if (AnimationState.isSpeaking && AnimationState.currentAudioDuration > 0) {
+        const elapsedTime = currentTime - AnimationState.animationStartTime;
+        const progress = elapsedTime / (AnimationState.currentAudioDuration * 1000);
+        
+        if (progress < 1.0) {
+            const cycleSpeed = (150 / AnimationState.currentAudioDuration) * 1000;
+            AnimationState.mouthCycleProgress = (elapsedTime % cycleSpeed) / cycleSpeed;
+            updatePhoneticMouthCycle(AnimationState.mouthCycleProgress);
+        } else {
+            AnimationState.isSpeaking = false;
+            AnimationState.mouthClosed.opacity = lerp(AnimationState.mouthClosed.opacity, 1.0, 0.2);
+            AnimationState.mouthMiddling.opacity = lerp(AnimationState.mouthMiddling.opacity, 0.0, 0.2);
+            AnimationState.mouthOpen.opacity = lerp(AnimationState.mouthOpen.opacity, 0.0, 0.2);
+        }
+    } else if (!AnimationState.isSpeaking) {
+        AnimationState.mouthClosed.opacity = lerp(AnimationState.mouthClosed.opacity, 1.0, 0.2);
+        AnimationState.mouthMiddling.opacity = lerp(AnimationState.mouthMiddling.opacity, 0.0, 0.2);
+        AnimationState.mouthOpen.opacity = lerp(AnimationState.mouthOpen.opacity, 0.0, 0.2);
+    }
+    
+    updateBlinkAnimation(currentTime);
+    updateMouthLayers();
+    updateEyeLayers();
+    
+    AnimationState.animationFrameId = requestAnimationFrame(animationLoop);
+}
+
+/**
+ * Start speech animation with audio duration synchronization
+ */
+function startSpeechAnimation(audioDuration) {
+    AnimationState.isSpeaking = true;
+    AnimationState.currentAudioDuration = audioDuration;
+    AnimationState.animationStartTime = performance.now();
+    console.log(`🎤 Speech animation started (duration: ${audioDuration}s)`);
+}
+
+/**
+ * Stop speech animation
+ */
+function stopSpeechAnimation() {
+    AnimationState.isSpeaking = false;
+    console.log('🤐 Speech animation stopped');
+}
+
+/**
+ * Initialize animation engine
+ */
+function initAnimationEngine() {
+    AnimationState.animationFrameId = requestAnimationFrame(animationLoop);
+    updateMouthLayers();
+    updateEyeLayers();
+    console.log('✅ Animation engine initialized');
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 
@@ -581,6 +868,9 @@ function initializeApp() {
     
     // Set initial avatar expression
     switchAvatarExpression('exp 3');
+    
+    // Initialize animation engine
+    initAnimationEngine();
     
     console.log('✅ Application Ready');
 }
