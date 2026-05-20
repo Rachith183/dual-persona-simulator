@@ -1,18 +1,17 @@
 /**
- * RESPONSIVE SIDEBAR MATRIX - MODULAR RUNTIME ENGINE
- * Handles view routing, calendar generation, and responsive UI state
+ * PRODUCTION-READY CHARACTER HUD INTERFACE
+ * Navigation routing, calendar engine, and state management
  */
 
 // ============================================================================
-// STATE & CONFIGURATION
+// STATE MANAGEMENT
 // ============================================================================
 
-const UIState = {
-    currentPanel: 'panel-ch-core',
-    currentYear: 2026,
-    currentMonth: 4, // 0-indexed (May = 4),
-    taskMetrics: {}, // Will store task counts by date
-    characterAnimator: null, // Will be initialized with CharacterLayerAnimator
+const AppState = {
+    activeTrackingYear: 2026,
+    activeTrackingMonth: 4, // 0-indexed (May = 4)
+    activePanel: 'ch-core',
+    drawerOpen: false,
 };
 
 const MONTH_NAMES = [
@@ -20,115 +19,111 @@ const MONTH_NAMES = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const DOM_REFS = {
-    sidebarToggleBtn: document.getElementById('sidebar-toggle-btn'),
-    appSidebar: document.getElementById('app-sidebar'),
-    navItems: document.querySelectorAll('.nav-item'),
-    mainContent: document.getElementById('main-content'),
-    appPanels: document.querySelectorAll('.app-panel'),
-    calendarGrid: document.getElementById('calendar-grid'),
-    prevMonthBtn: document.getElementById('prev-month-btn'),
-    nextMonthBtn: document.getElementById('next-month-btn'),
-    calendarMonthDisplay: document.getElementById('calendar-month-display'),
-    characterLayer: document.getElementById('character-animation-layer'),
-    exprButtons: document.querySelectorAll('.expr-btn'),
-    reactionButtons: document.querySelectorAll('.reaction-btn'),
+// ============================================================================
+// DOM REFERENCES
+// ============================================================================
+
+const DOM = {
+    hamburgerBtn: document.getElementById('hamburger-menu-trigger'),
+    sidebarDrawer: document.getElementById('app-sidebar-drawer'),
+    navLinks: document.querySelectorAll('.nav-link'),
+    contentPanels: document.querySelectorAll('.content-panel'),
+    
+    // Calendar elements
+    calendarPrevBtn: document.getElementById('calendar-prev-month'),
+    calendarNextBtn: document.getElementById('calendar-next-month'),
+    calendarMonthYear: document.getElementById('calendar-month-year'),
+    calendarDaysMatrix: document.getElementById('calendar-days-matrix'),
+    
+    // Chat elements
+    chatUserInput: document.getElementById('chat-user-input'),
+    chatMicBtn: document.getElementById('chat-mic-btn'),
+    chatSendBtn: document.getElementById('chat-send-btn'),
+    chatHistory: document.getElementById('chat-history-log'),
 };
 
 // ============================================================================
-// CHARACTER LAYER ANIMATOR INITIALIZATION
+// HAMBURGER MENU & DRAWER TOGGLE
 // ============================================================================
 
 /**
- * Initialize character animation layer
+ * Toggle sidebar drawer visibility
  */
-function initCharacterAnimator() {
-    if (typeof CharacterLayerAnimator !== 'undefined' && DOM_REFS.characterLayer) {
-        UIState.characterAnimator = new CharacterLayerAnimator('#character-animation-layer');
-        
-        // Attach expression button handlers
-        DOM_REFS.exprButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const expression = btn.getAttribute('data-expr');
-                UIState.characterAnimator.setExpression(expression);
-            });
-        });
-
-        // Attach reaction button handlers
-        DOM_REFS.reactionButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const reaction = btn.getAttribute('data-reaction');
-                UIState.characterAnimator.triggerReaction(reaction);
-            });
-        });
-
-        console.log('✅ Character Animator initialized');
+function toggleDrawer() {
+    AppState.drawerOpen = !AppState.drawerOpen;
+    
+    if (AppState.drawerOpen) {
+        DOM.sidebarDrawer.classList.add('drawer-visible');
+    } else {
+        DOM.sidebarDrawer.classList.remove('drawer-visible');
     }
 }
 
-// ============================================================================
-// SIDEBAR & NAVIGATION ROUTING
-// ============================================================================
-
 /**
- * Initialize hamburger menu toggle
+ * Initialize hamburger menu trigger
  */
-function initHamburgerToggle() {
-    DOM_REFS.sidebarToggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        DOM_REFS.appSidebar.classList.toggle('open');
-    });
-
-    // Close sidebar when clicking outside
+function initHamburgerMenu() {
+    if (DOM.hamburgerBtn) {
+        DOM.hamburgerBtn.addEventListener('click', toggleDrawer);
+    }
+    
+    // Close drawer when clicking outside
     document.addEventListener('click', (e) => {
-        if (!DOM_REFS.appSidebar.contains(e.target) && 
-            !DOM_REFS.sidebarToggleBtn.contains(e.target)) {
-            DOM_REFS.appSidebar.classList.remove('open');
+        if (AppState.drawerOpen && 
+            !DOM.sidebarDrawer.contains(e.target) &&
+            !DOM.hamburgerBtn.contains(e.target)) {
+            toggleDrawer();
         }
     });
 }
 
+// ============================================================================
+// PANEL ROUTING & NAVIGATION
+// ============================================================================
+
 /**
- * Switch active panel using routing logic
+ * Switch active content panel
  */
-function switchPanel(panelId) {
+function switchPanel(panelRoute) {
     // Hide all panels
-    DOM_REFS.appPanels.forEach(panel => {
-        panel.classList.add('hidden');
+    DOM.contentPanels.forEach(panel => {
+        panel.classList.remove('active-panel');
     });
-
-    // Show target panel
-    const targetPanel = document.getElementById(panelId);
-    if (targetPanel) {
-        targetPanel.classList.remove('hidden');
-        UIState.currentPanel = panelId;
+    
+    // Show target panel based on route
+    const panelMap = {
+        'ch-core': 'panel-character-ai',
+        'goal-tracker': 'panel-goal-tracker',
+        'calendar': 'panel-calendar',
+        'distraction': 'panel-distraction',
+        'profile': 'panel-profile',
+    };
+    
+    const targetPanelId = panelMap[panelRoute];
+    if (targetPanelId) {
+        const targetPanel = document.getElementById(targetPanelId);
+        if (targetPanel) {
+            targetPanel.classList.add('active-panel');
+            AppState.activePanel = panelRoute;
+        }
     }
-
-    // Close sidebar on mobile after selection
-    if (window.innerWidth < 768) {
-        DOM_REFS.appSidebar.classList.remove('open');
+    
+    // Close drawer after selection
+    if (AppState.drawerOpen) {
+        toggleDrawer();
     }
 }
 
 /**
- * Initialize navigation item click handlers
+ * Initialize navigation link listeners
  */
 function initNavigation() {
-    DOM_REFS.navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            const panelId = item.getAttribute('data-panel');
-            switchPanel(panelId);
+    DOM.navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const route = link.getAttribute('data-route');
+            switchPanel(route);
         });
-
-        // Make buttons within nav items clickable
-        const btn = item.querySelector('.nav-btn');
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const panelId = item.getAttribute('data-panel');
-                switchPanel(panelId);
-            });
-        }
     });
 }
 
@@ -137,153 +132,172 @@ function initNavigation() {
 // ============================================================================
 
 /**
- * Get number of days in a month
+ * Get days in month
  */
 function getDaysInMonth(year, month) {
     return new Date(year, month + 1, 0).getDate();
 }
 
 /**
- * Get the starting day of week for a month (0 = Sunday, 6 = Saturday)
+ * Get first day of week for month (0 = Sunday)
  */
 function getFirstDayOfMonth(year, month) {
     return new Date(year, month, 1).getDay();
 }
 
 /**
- * Generate single-month calendar grid
+ * Render single-month calendar grid
  */
 function renderCalendarMonth() {
-    const grid = DOM_REFS.calendarGrid;
-    grid.innerHTML = ''; // Clear existing calendar
-
-    const year = UIState.currentYear;
-    const month = UIState.currentMonth;
+    const year = AppState.activeTrackingYear;
+    const month = AppState.activeTrackingMonth;
+    
+    // Update month/year display
+    DOM.calendarMonthYear.textContent = `${MONTH_NAMES[month]} ${year}`;
+    
+    // Clear previous grid
+    DOM.calendarDaysMatrix.innerHTML = '';
+    
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
-
-    // Update month display header
-    DOM_REFS.calendarMonthDisplay.textContent = 
-        `${MONTH_NAMES[month]} ${year}`;
-
-    // Create weekday headers
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const headerRow = document.createElement('div');
-    headerRow.className = 'calendar-week-row weekday-header';
     
-    weekDays.forEach(day => {
+    // Create weekday header row
+    const weekdayHeader = document.createElement('div');
+    weekdayHeader.className = 'calendar-week-header';
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    weekdays.forEach(day => {
         const dayLabel = document.createElement('div');
-        dayLabel.className = 'calendar-day-cell weekday-label';
+        dayLabel.className = 'calendar-day-header';
         dayLabel.textContent = day;
-        headerRow.appendChild(dayLabel);
+        weekdayHeader.appendChild(dayLabel);
     });
+    DOM.calendarDaysMatrix.appendChild(weekdayHeader);
     
-    grid.appendChild(headerRow);
-
-    // Create day cells
-    let calendarWeekRow = document.createElement('div');
-    calendarWeekRow.className = 'calendar-week-row';
-
-    // Add empty cells for days before month starts
+    // Create day cells grid
+    const dayGrid = document.createElement('div');
+    dayGrid.className = 'calendar-days-grid';
+    
+    // Add empty cells before month starts
     for (let i = 0; i < firstDay; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'calendar-day-cell empty';
-        calendarWeekRow.appendChild(emptyCell);
+        dayGrid.appendChild(emptyCell);
     }
-
-    // Add day cells for the month
+    
+    // Add day cells
     for (let day = 1; day <= daysInMonth; day++) {
         const dayCell = document.createElement('div');
         dayCell.className = 'calendar-day-cell';
         dayCell.textContent = day;
-
-        // Check task metrics for this date
-        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const taskCount = UIState.taskMetrics[dateKey] || 0;
-
-        if (taskCount >= 2) {
-            // Emerald Mint checkmark for 2+ tasks
-            dayCell.classList.add('task-complete');
-            const checkmark = document.createElement('span');
-            checkmark.className = 'task-indicator';
-            checkmark.textContent = '✓';
-            dayCell.appendChild(checkmark);
-        } else if (taskCount > 0) {
-            // Vivid Coral cross for incomplete
-            dayCell.classList.add('task-incomplete');
-            const cross = document.createElement('span');
-            cross.className = 'task-indicator';
-            cross.textContent = '✕';
-            dayCell.appendChild(cross);
-        }
-
-        calendarWeekRow.appendChild(dayCell);
-
-        // Start new week row after Saturday
-        if ((firstDay + day) % 7 === 0) {
-            grid.appendChild(calendarWeekRow);
-            calendarWeekRow = document.createElement('div');
-            calendarWeekRow.className = 'calendar-week-row';
-        }
+        
+        // Optional: Add task indicator logic here
+        dayCell.addEventListener('click', () => {
+            console.log(`Clicked day: ${day}`);
+        });
+        
+        dayGrid.appendChild(dayCell);
     }
-
-    // Append final week if it has any days
-    if (calendarWeekRow.children.length > 0) {
-        grid.appendChild(calendarWeekRow);
-    }
+    
+    DOM.calendarDaysMatrix.appendChild(dayGrid);
 }
 
 /**
- * Handle previous month navigation
+ * Navigate to previous month
  */
 function handlePrevMonth() {
-    UIState.currentMonth--;
-    if (UIState.currentMonth < 0) {
-        UIState.currentMonth = 11;
-        UIState.currentYear--;
+    AppState.activeTrackingMonth--;
+    if (AppState.activeTrackingMonth < 0) {
+        AppState.activeTrackingMonth = 11;
+        AppState.activeTrackingYear--;
     }
     renderCalendarMonth();
 }
 
 /**
- * Handle next month navigation
+ * Navigate to next month
  */
 function handleNextMonth() {
-    UIState.currentMonth++;
-    if (UIState.currentMonth > 11) {
-        UIState.currentMonth = 0;
-        UIState.currentYear++;
+    AppState.activeTrackingMonth++;
+    if (AppState.activeTrackingMonth > 11) {
+        AppState.activeTrackingMonth = 0;
+        AppState.activeTrackingYear++;
     }
     renderCalendarMonth();
 }
 
 /**
- * Initialize calendar navigation
+ * Initialize calendar navigation listeners
  */
 function initCalendarNavigation() {
-    DOM_REFS.prevMonthBtn.addEventListener('click', handlePrevMonth);
-    DOM_REFS.nextMonthBtn.addEventListener('click', handleNextMonth);
+    if (DOM.calendarPrevBtn) {
+        DOM.calendarPrevBtn.addEventListener('click', handlePrevMonth);
+    }
+    if (DOM.calendarNextBtn) {
+        DOM.calendarNextBtn.addEventListener('click', handleNextMonth);
+    }
 }
 
 // ============================================================================
-// SAMPLE DATA LOADING
+// CHAT INTERFACE HANDLERS
 // ============================================================================
 
 /**
- * Load sample task metrics (replace with Firebase integration)
+ * Handle chat message send
  */
-function loadSampleTaskMetrics() {
-    // Example: May 2026 with various task counts
-    UIState.taskMetrics = {
-        '2026-05-01': 0,
-        '2026-05-02': 1,
-        '2026-05-03': 3,  // >= 2, gets checkmark
-        '2026-05-05': 2,  // >= 2, gets checkmark
-        '2026-05-10': 1,
-        '2026-05-15': 4,  // >= 2, gets checkmark
-        '2026-05-20': 1,
-        '2026-05-25': 3,  // >= 2, gets checkmark
-    };
+function handleChatSend() {
+    const message = DOM.chatUserInput?.value.trim();
+    if (!message) return;
+    
+    // Display user message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'chat-message user-message';
+    userMsg.innerHTML = `<p>${escapeHtml(message)}</p>`;
+    DOM.chatHistory?.appendChild(userMsg);
+    
+    // Clear input
+    if (DOM.chatUserInput) {
+        DOM.chatUserInput.value = '';
+    }
+    
+    // Auto-scroll to bottom
+    if (DOM.chatHistory) {
+        DOM.chatHistory.scrollTop = DOM.chatHistory.scrollHeight;
+    }
+    
+    console.log('Message sent:', message);
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Initialize chat listeners
+ */
+function initChatHandlers() {
+    if (DOM.chatSendBtn) {
+        DOM.chatSendBtn.addEventListener('click', handleChatSend);
+    }
+    
+    if (DOM.chatUserInput) {
+        DOM.chatUserInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleChatSend();
+            }
+        });
+    }
+    
+    if (DOM.chatMicBtn) {
+        DOM.chatMicBtn.addEventListener('click', () => {
+            console.log('Microphone button clicked');
+            // TODO: Implement speech-to-text
+        });
+    }
 }
 
 // ============================================================================
@@ -291,59 +305,57 @@ function loadSampleTaskMetrics() {
 // ============================================================================
 
 /**
- * Initialize all UI components on DOM load
+ * Initialize all UI components
  */
-function initializeUIEngine() {
-    console.log('🚀 Initializing Responsive Sidebar Matrix Engine');
-
-    // Load data
-    loadSampleTaskMetrics();
-
-    // Initialize modules
-    initHamburgerToggle();
+function initializeApp() {
+    console.log('🚀 Initializing Character HUD System');
+    
+    initHamburgerMenu();
     initNavigation();
     initCalendarNavigation();
-    initCharacterAnimator();
-
-    // Initial render
+    initChatHandlers();
+    
+    // Render initial calendar
     renderCalendarMonth();
-    switchPanel('panel-ch-core');
-
-    console.log('✅ UI Engine Ready');
+    
+    console.log('✅ Character HUD System Ready');
 }
 
-// Wait for DOM to be fully loaded
+// Wait for DOM to load
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeUIEngine);
+    document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
-    initializeUIEngine();
+    initializeApp();
 }
-
-// ============================================================================
-// RESPONSIVE BREAKPOINT HANDLER
-// ============================================================================
-
-/**
- * Handle window resize for responsive adjustments
- */
-function handleWindowResize() {
-    if (window.innerWidth >= 768) {
-        // Desktop: keep sidebar visible
-        DOM_REFS.appSidebar.classList.remove('open');
-    }
-}
-
-window.addEventListener('resize', handleWindowResize);
-const midTermTargetCircle = document.querySelector("#mid-term-target-circle");
-const endGoalCircle = document.querySelector("#end-goal-circle");
-const distractionForm = document.querySelector("#distraction-log-form");
-const distractionTypeInput = document.querySelector("#distraction-type");
-const distractionDateInput = document.querySelector("#distraction-date");
-const distractionTimeInput = document.querySelector("#distraction-time");
-const distractionDurationInput = document.querySelector("#distraction-duration");
-const dailyDistractionCount = document.querySelector("#daily-distractions");
-const weeklyDistractionCount = document.querySelector("#weekly-distractions");
-const monthlyDistractionCount = document.querySelector("#monthly-distractions");
+const scValue = document.querySelector("#sc-value");
+const stabilityMeter = document.querySelector("#stability-meter");
+const puppetFaceOverlay = document.querySelector(".puppet-face-overlay");
+const puppetEyes = document.querySelectorAll(".puppet-eye");
+const puppetLip = document.querySelector(".puppet-lip");
+const scanInput = document.querySelector("#scan-file");
+const scanSubmit = document.querySelector(".scan-submit");
+const scanStatus = document.querySelector(".scan-status");
+const interfaceContainer = document.querySelector(".vtuber-interface-container");
+const chatInput = document.querySelector("#chat-text-input");
+const chatForm = document.querySelector(".chat-input-form");
+const micToggleButton = document.getElementById("mic-toggle-btn");
+const apiKeyInput = document.querySelector("#gemini-api-key-input");
+const saveApiKeyButton = document.querySelector("#save-api-key-btn");
+const apiKeyStatus = document.querySelector(".api-key-status");
+const longTermGoals = document.querySelector(".long-term-goals");
+const midTermGoals = document.querySelector(".mid-term-goals");
+const dailyRoutines = document.querySelector(".daily-routines");
+const timeBlocksList = document.querySelector(".time-blocks-list");
+const activeQuestsList = document.querySelector(".active-quests-list");
+const rewardsShopList = document.querySelector(".rewards-shop-list");
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const voiceInputEngine = SpeechRecognition ? new SpeechRecognition() : null;
+const configuredApiBaseUrl = String(window.AOI_API_BASE_URL || "").replace(/\/$/, "");
+const interactionEndpoint = configuredApiBaseUrl ? `${configuredApiBaseUrl}/interact` : "/api/interact";
+const scanEndpoint = configuredApiBaseUrl ? `${configuredApiBaseUrl}/scan` : "/api/scan";
+const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const geminiModelName = window.AOI_GEMINI_MODEL || "gemini-2.5-flash";
+const storedGeminiApiKey = window.localStorage.getItem("aoi_gemini_api_key") || "";
 
 const SYSTEM_INSTRUCTION_MATRIX = `# CHARACTER MATRICES: AOI HINAMI DIAGNOSTIC & STRATEGY PROFILE
 - Core Identity: You are Aoi Hinami. You treat human life and habit tracking strictly as a gamified architecture that can be mastered through rules, parameters, and relentless execution. You are cold, bold, composed, and ruthlessly analytical.
@@ -460,161 +472,29 @@ let blinkCycleStartedAt = performance.now();
 let blinkCycleIndex = 0;
 let audioExpressionTimer = null;
 let queuedExpressionFlag = "state-analytical";
-let currentExpressionState = null;
-let expressionAssetFade = 1;
-let expressionAssetTransitionToken = 0;
-
-const EXPRESSION_STATE_ASSET_MAP = {
-  "exp 1": {
-    leftEye: "exp 1 - angry/angry left eye.png",
-    rightEye: "exp 1 - angry/angry right eye.png",
-    mouth: "exp 1 - angry/angry mouth.png"
-  },
-  "exp 2": {
-    leftEye: "exp 2 - annoyed or disatisfied/lefteye annoyed.png",
-    rightEye: "exp 2 - annoyed or disatisfied/righteye annoyed.png",
-    mouth: "exp 2 - annoyed or disatisfied/mouth annoyed.png"
-  },
-  "exp 3": {
-    leftEye: "exp3-proud or satisfied/left half opened eye.png",
-    rightEye: "exp3-proud or satisfied/right half opened eye.png",
-    mouth: "exp3-proud or satisfied/proud mouth.png"
-  },
-  "exp 4": {
-    leftEye: "exp 4 - smiling/lefteye smiling.png",
-    rightEye: "exp 4 - smiling/righteye smiling.png",
-    mouth: "exp 4 - smiling/mouth smiling.png"
-  }
-};
-
-const EXPRESSION_LAYER_BINDINGS = {
-  mouthClosed: "mouth",
-  mouthMiddling: "mouth",
-  mouthOpen: "mouth",
-  leftEyeOpen: "leftEye",
-  leftEyeHalf: "leftEye",
-  rightEyeOpen: "rightEye",
-  rightEyeHalf: "rightEye"
-};
-
-function switchLayerAssets(expressionState) {
-  const normalizedState = normalizeExpressionState(expressionState);
-
-  if (!normalizedState || currentExpressionState === normalizedState) {
-    return;
-  }
-
-  const assetSet = EXPRESSION_STATE_ASSET_MAP[normalizedState];
-  if (!assetSet) {
-    return;
-  }
-
-  currentExpressionState = normalizedState;
-  const transitionToken = expressionAssetTransitionToken + 1;
-  expressionAssetTransitionToken = transitionToken;
-  const startedAt = performance.now();
-  let didSwap = false;
-
-  const runTransition = (timestamp) => {
-    if (transitionToken !== expressionAssetTransitionToken) {
-      return;
-    }
-
-    const elapsed = timestamp - startedAt;
-
-    if (elapsed < 75) {
-      expressionAssetFade = clamp(1 - elapsed / 75, 0, 1);
-    } else {
-      if (!didSwap) {
-        applyExpressionAssetSet(assetSet);
-        didSwap = true;
-      }
-
-      expressionAssetFade = clamp((elapsed - 75) / 75, 0, 1);
-    }
-
-    if (elapsed < 150) {
-      window.requestAnimationFrame(runTransition);
-      return;
-    }
-
-    expressionAssetFade = 1;
-  };
-
-  window.requestAnimationFrame(runTransition);
-}
-
-function normalizeExpressionState(expressionState) {
-  const value = String(expressionState || "").toLowerCase().trim();
-
-  if (value.startsWith("exp 1")) return "exp 1";
-  if (value.startsWith("exp 2")) return "exp 2";
-  if (value.startsWith("exp 3")) return "exp 3";
-  if (value.startsWith("exp3")) return "exp 3";
-  if (value.startsWith("exp 4")) return "exp 4";
-
-  return null;
-}
-
-function applyExpressionAssetSet(assetSet) {
-  Object.entries(EXPRESSION_LAYER_BINDINGS).forEach(([layerKey, assetKey]) => {
-    const nextPath = assetSet[assetKey];
-    const layerElement = rigLayers[layerKey];
-
-    if (!layerElement || !nextPath || layerElement.dataset.layerRelativePath === nextPath) {
-      return;
-    }
-
-    layerElement.dataset.layerRelativePath = nextPath;
-    layerElement.dataset.triedParentLayerPath = "false";
-    layerElement.src = getLayerAssetPath(nextPath);
-  });
-}
-const BLINK_CADENCE_MS = [7000, 7600, 8200, 8800, 9000];
+const blinkCadenceMilliseconds = [10000, 15000, 7000, 5000, 8000, 9000, 15000, 6000];
 const AUDIO_EXPRESSION_SEQUENCE = [
   "state-listening",
   "state-thinking",
   "state-focused",
   "state-command",
   "state-serious",
-  "state-calculating",
-  "state-soft-smile",
-  "state-curious"
+  "state-calculating"
 ];
-const EYE_LAYER_KEYS = [
-  "leftEyeOpen",
-  "rightEyeOpen",
-  "leftEyeHalf",
-  "rightEyeHalf",
-  "leftEyeClosed",
-  "rightEyeClosed"
-];
-const MOUTH_LAYER_KEYS = ["mouthClosed", "mouthMiddling", "mouthOpen"];
 const RIG_BASELINE_Y = 0;
 const RIG_LERP_FACTOR = 0.085;
 const rigLayers = {
   bg: document.querySelector(".layer-bg"),
   body: document.querySelector(".layer-body"),
   face: document.querySelector(".layer-face-base"),
-  mouthClosed: document.querySelector(".layer-mouth-closed"),
-  mouthMiddling: document.querySelector(".layer-mouth-middling"),
-  mouthOpen: document.querySelector(".layer-mouth-open"),
-  leftEyeOpen: document.querySelector(".layer-left-eye-open"),
-  rightEyeOpen: document.querySelector(".layer-right-eye-open"),
-  leftEyeHalf: document.querySelector(".layer-left-eye-half"),
-  rightEyeHalf: document.querySelector(".layer-right-eye-half"),
-  leftEyeClosed: document.querySelector(".layer-left-eye-closed"),
-  rightEyeClosed: document.querySelector(".layer-right-eye-closed"),
+  mouth: document.querySelector(".layer-mouth"),
+  leftEye: document.querySelector(".layer-left-eye"),
+  rightEye: document.querySelector(".layer-right-eye"),
   bangs: document.querySelector(".layer-bangs"),
   leftStrand: document.querySelector(".layer-left-strand"),
   rightStrand: document.querySelector(".layer-right-strand"),
   leftHairBack: document.querySelector(".layer-left-hair-back"),
   rightHairBack: document.querySelector(".layer-right-hair-back")
-};
-const mouthLayerOpacities = {
-  mouthClosed: 1,
-  mouthMiddling: 0,
-  mouthOpen: 0
 };
 const rigState = {
   expressionFlag: "state-analytical",
@@ -1073,41 +953,24 @@ function createLayerPose() {
 
 function resolveLayerTarget(layerKey) {
   const expressionPose = expressionFrames[rigState.expressionFlag] || rigPoseMatrix[rigState.expressionFlag] || expressionFrames["state-analytical"];
-  let mappedKey = layerKey;
-
-  if (MOUTH_LAYER_KEYS.includes(layerKey)) {
-    mappedKey = "mouth";
-  } else if (layerKey.startsWith("leftEye")) {
-    mappedKey = "leftEye";
-  } else if (layerKey.startsWith("rightEye")) {
-    mappedKey = "rightEye";
-  }
-
-  return { ...neutralLayerPose, ...(expressionPose.layers[mappedKey] || {}) };
+  return { ...neutralLayerPose, ...(expressionPose.layers[layerKey] || {}) };
 }
 
 function getBrowserGeminiApiKey() {
   return window.localStorage.getItem("aoi_gemini_api_key") || window.AOI_GEMINI_API_KEY || "";
 }
 
-function getLayerAssetPath(relativePath, useLocalParentPath = false) {
-  const normalized = relativePath.replace(/^\.\/|^\.\\|^\//, "").replace(/\\/g, "/");
-  const mapped = normalized.replace(/^layers(?: expression)?\//, "");
-
-  if (useLocalParentPath || window.location.protocol === "file:") {
-    return `../layers expression/${mapped}`;
-  }
-
-  return `./layers/${mapped}`;
+function getLayerAssetPath(fileName, useLocalParentPath = false) {
+  const isDirectFrontendFile = window.location.protocol === "file:" && /\/frontend\/index\.html$/i.test(window.location.pathname.replace(/\\/g, "/"));
+  return `${isDirectFrontendFile || useLocalParentPath ? "../layers" : "./layers"}/${fileName}`;
 }
 
 function hydrateRigLayerSources() {
   document.querySelectorAll(".rig-layer").forEach((layerImage) => {
     const sourcePath = layerImage.getAttribute("src") || "";
-    const match = sourcePath.match(/(?:layers(?: expression)?[\\/].*)$/);
-    const relativePath = match ? match[0].replace(/^layers(?: expression)?[\\/]/, "") : sourcePath;
+    const fileName = sourcePath.split("/").pop();
 
-    if (!relativePath) {
+    if (!fileName) {
       return;
     }
 
@@ -1120,9 +983,9 @@ function hydrateRigLayerSources() {
       }
 
       layerImage.dataset.triedParentLayerPath = "true";
-      layerImage.src = getLayerAssetPath(layerImage.dataset.layerRelativePath || relativePath, true);
+      layerImage.src = getLayerAssetPath(fileName, true);
     });
-    layerImage.src = getLayerAssetPath(relativePath);
+    layerImage.src = getLayerAssetPath(fileName);
   });
 }
 
@@ -1158,8 +1021,8 @@ function prepareRigRenderer() {
     layerElement.style.animation = "none";
     layerElement.style.transition = "none";
     layerElement.style.filter = "none";
-    layerElement.style.opacity = ["bg", "face", "mouthClosed", "leftEyeOpen", "rightEyeOpen"].includes(layerKey) ? "1" : "0";
-    layerElement.style.visibility = ["bg", "face", "mouthClosed", "leftEyeOpen", "rightEyeOpen"].includes(layerKey) ? "visible" : "hidden";
+    layerElement.style.opacity = ["bg", "face", "mouth", "leftEye", "rightEye"].includes(layerKey) ? "1" : "0";
+    layerElement.style.visibility = ["bg", "face", "mouth", "leftEye", "rightEye"].includes(layerKey) ? "visible" : "hidden";
     layerElement.style.transformOrigin = getLayerTransformOrigin(layerKey);
     layerElement.style.willChange = "transform, opacity";
   });
@@ -1167,11 +1030,15 @@ function prepareRigRenderer() {
 }
 
 function getLayerTransformOrigin(layerKey) {
-  if (EYE_LAYER_KEYS.includes(layerKey)) {
-    return layerKey.includes("Left") ? "38% 29%" : "56% 29%";
+  if (layerKey === "leftEye") {
+    return "38% 29%";
   }
 
-  if (MOUTH_LAYER_KEYS.includes(layerKey)) {
+  if (layerKey === "rightEye") {
+    return "56% 29%";
+  }
+
+  if (layerKey === "mouth") {
     return "51% 38%";
   }
 
@@ -1195,11 +1062,14 @@ function renderCharacterRig(timestamp) {
   viewport.style.filter = "none";
   viewport.style.boxShadow = "0 10px 26px rgba(0, 0, 0, 0.12)";
 
-  const eyeState = getEyeBlinkState(timestamp);
-  const mouthState = getMouthLayerState(timestamp);
-
   Object.entries(rigLayers).forEach(([layerKey, layerElement]) => {
     if (!layerElement) {
+      return;
+    }
+
+    if (!["bg", "face", "mouth", "leftEye", "rightEye"].includes(layerKey)) {
+      layerElement.style.opacity = "0";
+      layerElement.style.visibility = "hidden";
       return;
     }
 
@@ -1213,7 +1083,6 @@ function renderCharacterRig(timestamp) {
     if (layerKey === "bg") {
       layerElement.style.transform = "translate3d(0, 0, 0) scale(1)";
       layerElement.style.opacity = "1";
-      layerElement.style.visibility = "visible";
       return;
     }
 
@@ -1221,93 +1090,30 @@ function renderCharacterRig(timestamp) {
     const puppetY = breathWave * 0.95;
     const puppetScale = 1.003 + breathWave * 0.0018;
     const puppetAngle = slowWave * 0.0018;
-    const isEyeLayer = EYE_LAYER_KEYS.includes(layerKey);
-    const isMouthLayer = MOUTH_LAYER_KEYS.includes(layerKey);
-    const assetFade = EXPRESSION_LAYER_BINDINGS[layerKey] ? expressionAssetFade : 1;
+    const isEyeLayer = ["leftEye", "rightEye"].includes(layerKey);
+    const isMouthLayer = layerKey === "mouth";
+    const blinkOpacity = isEyeLayer ? getBlinkOpacity(timestamp) : 1;
     const gazeOffset = isEyeLayer ? getGazeOffset(timestamp) : { x: 0, y: 0 };
     const mouthMotion = isMouthLayer ? getMouthMotion(timestamp) : { y: 0, scaleY: 1, scaleX: 1 };
-
     layerElement.style.transform = `translate3d(${(currentLayerPose.x + puppetX + gazeOffset.x).toFixed(3)}px, ${(currentLayerPose.y + puppetY + gazeOffset.y + mouthMotion.y).toFixed(3)}px, 0) rotate(${(currentLayerPose.angle + puppetAngle).toFixed(4)}rad) scale(${(currentLayerPose.scale * puppetScale * mouthMotion.scaleX).toFixed(4)}, ${(currentLayerPose.scaleY * puppetScale * mouthMotion.scaleY).toFixed(4)})`;
-
-    if (isEyeLayer) {
-      const opacityValue = eyeState[layerKey] * assetFade;
-      layerElement.style.opacity = opacityValue.toFixed(3);
-      layerElement.style.visibility = opacityValue > 0 ? "visible" : "hidden";
-      return;
-    }
-
-    if (isMouthLayer) {
-      const opacityValue = (currentLayerPose.opacity || 1) * mouthState[layerKey] * assetFade;
-      layerElement.style.opacity = opacityValue.toFixed(3);
-      layerElement.style.visibility = opacityValue > 0 ? "visible" : "hidden";
-      return;
-    }
-
-    layerElement.style.opacity = (currentLayerPose.opacity || 1).toFixed(3);
-    layerElement.style.visibility = "visible";
+    layerElement.style.opacity = (currentLayerPose.opacity * blinkOpacity).toFixed(3);
   });
 
   requestAnimationFrame(renderCharacterRig);
 }
 
-function getEyeBlinkState(timestamp) {
-  const blinkDuration = 180;
-  const blinkGap = BLINK_CADENCE_MS[blinkCycleIndex % BLINK_CADENCE_MS.length];
+function getBlinkOpacity(timestamp) {
   const elapsedSinceBlinkCycle = timestamp - blinkCycleStartedAt;
+  const nextBlinkAt = blinkCadenceMilliseconds[blinkCycleIndex % blinkCadenceMilliseconds.length];
 
-  if (elapsedSinceBlinkCycle > blinkGap + blinkDuration) {
+  if (elapsedSinceBlinkCycle > nextBlinkAt + 180) {
     blinkCycleStartedAt = timestamp;
     blinkCycleIndex += 1;
   }
 
-  const blinkPhase = Math.max(0, Math.min(1, (elapsedSinceBlinkCycle - blinkGap) / blinkDuration));
-  const frame = Math.floor(blinkPhase * 8);
-  let leftOpen = 0;
-  let leftHalf = 0;
-  let leftClosed = 0;
-
-  if (elapsedSinceBlinkCycle < blinkGap) {
-    leftOpen = 1;
-  } else {
-    if (frame <= 1) {
-      leftHalf = 1;
-    } else if (frame <= 4) {
-      leftClosed = 1;
-    } else if (frame <= 6) {
-      leftHalf = 1;
-    } else {
-      leftOpen = 1;
-    }
-  }
-
-  return {
-    leftEyeOpen: leftOpen,
-    rightEyeOpen: leftOpen,
-    leftEyeHalf: leftHalf,
-    rightEyeHalf: leftHalf,
-    leftEyeClosed: leftClosed,
-    rightEyeClosed: leftClosed
-  };
-}
-
-function getMouthLayerState(timestamp) {
-  const isSpeaking = Date.now() < speechMotionUntil;
-  const cycleDuration = 120 + (Math.sin(timestamp * 0.008) + 1) * 30;
-  const progress = isSpeaking ? ((timestamp % cycleDuration) / cycleDuration) : 0;
-
-  const targetOpacities = isSpeaking
-    ? progress < 0.33
-      ? { mouthClosed: 0.05, mouthMiddling: 0.35, mouthOpen: 0.8 }
-      : progress < 0.66
-      ? { mouthClosed: 0.2, mouthMiddling: 0.75, mouthOpen: 0.25 }
-      : { mouthClosed: 0.75, mouthMiddling: 0.25, mouthOpen: 0.05 }
-    : { mouthClosed: 1, mouthMiddling: 0, mouthOpen: 0 };
-
-  Object.keys(mouthLayerOpacities).forEach((key) => {
-    mouthLayerOpacities[key] = lerp(mouthLayerOpacities[key], targetOpacities[key], 0.22);
-  });
-
-  return mouthLayerOpacities;
+  const blinkProgress = Math.max(0, Math.min(1, elapsedSinceBlinkCycle / 180));
+  const blinkAmount = elapsedSinceBlinkCycle <= 180 ? Math.sin(blinkProgress * Math.PI) : 0;
+  return 1 - blinkAmount * 0.82;
 }
 
 function getGazeOffset(timestamp) {
@@ -1800,7 +1606,6 @@ function renderBlueprint(blueprint) {
   renderActiveQuests(blueprint.active_quests);
   renderRewardsShop(blueprint.tiered_rewards_shop);
   renderTimeBlocks(blueprint.time_blocks, blueprint.active_quests);
-  updateGoalTrackerPanel(blueprint);
 }
 
 function normalizeBlueprint(blueprint) {
@@ -1846,84 +1651,11 @@ function normalizeBlueprint(blueprint) {
   };
 }
 
-function normalizeEfficiencyTasks(tasks) {
-  if (!Array.isArray(tasks)) {
-    return [];
-  }
-
-  return tasks.map((task, index) => {
-    const safeTask = task && typeof task === "object" ? task : {};
-    const granularSteps = Array.isArray(safeTask.granular_steps) ? safeTask.granular_steps.map(String) : [];
-
-    return {
-      task_id: String(safeTask.task_id || `hinami_task_${index + 1}`),
-      assigned_track: String(safeTask.assigned_track || "Track C"),
-      execution_paradigm: String(safeTask.execution_paradigm || "Paradigm 1"),
-      current_expression_state: normalizeExpressionState(safeTask.current_expression_state) || "exp 3",
-      scope_title: String(safeTask.scope_title || ""),
-      granular_steps: granularSteps,
-      xp_allocation: Number(safeTask.xp_allocation || 25),
-      ui_accent_color: String(safeTask.ui_accent_color || "#111111")
-    };
-  }).filter((task) => task.scope_title || task.granular_steps.length);
-}
-
-function createBlueprintFromEfficiencyTasks(tasks) {
-  const normalizedTasks = normalizeEfficiencyTasks(tasks);
-
-  if (!normalizedTasks.length) {
-    return null;
-  }
-
-  return {
-    system_active: true,
-    goals_hierarchy: {
-      long_term: [`Execute ${normalizedTasks[0].assigned_track} under ${normalizedTasks[0].execution_paradigm}.`],
-      mid_term: normalizedTasks.map((task) => `${task.assigned_track}: ${task.scope_title}`),
-      daily_routines: normalizedTasks.flatMap((task) => task.granular_steps.slice(0, 2))
-    },
-    time_blocks: normalizedTasks.map((task, index) => ({
-      time_window: index === 0 ? "Immediate execution block" : `Follow-up block ${index + 1}`,
-      label: task.scope_title,
-      type: task.assigned_track.replace(/\s+/g, "_").toLowerCase(),
-      hardware_alarm: {
-        enabled: false,
-        trigger_time: "",
-        label: task.scope_title
-      },
-      hardware_timer: {
-        enabled: true,
-        duration_string: task.execution_paradigm.includes("Paradigm 2") ? "90m" : "20m",
-        label: task.scope_title
-      }
-    })),
-    active_quests: normalizedTasks.map((task) => ({
-      quest_id: task.task_id,
-      title: task.scope_title,
-      reward_xp: task.xp_allocation,
-      reward_currency: Math.max(10, Math.round(task.xp_allocation * 0.65))
-    })),
-    tiered_rewards_shop: [
-      {
-        item_id: "REWARD_CONTROLLED_BREAK",
-        title: "Controlled 10 minute recovery window",
-        cost: 30
-      },
-      {
-        item_id: "REWARD_LONGER_UNLOCK",
-        title: "Longer entertainment unlock after full completion",
-        cost: 90
-      }
-    ]
-  };
-}
-
 function sanitizeStructuredPayload(payload) {
   const safePayload = payload && typeof payload === "object" ? payload : {};
   const rigControl = safePayload.rig_control && typeof safePayload.rig_control === "object" ? safePayload.rig_control : {};
   const sessionStage = SESSION_STAGES.includes(safePayload.session_stage) ? safePayload.session_stage : currentSessionStage;
   const expressionFlag = STATE_CLASSES.includes(rigControl.expression_flag) ? rigControl.expression_flag : "state-analytical";
-  const efficiencyTasks = normalizeEfficiencyTasks(safePayload.efficiency_tasks || safePayload.hinami_tasks || safePayload.generated_tasks);
 
   return {
     character_dialogue: String(safePayload.character_dialogue || "State the primary life vector you want optimized. One target."),
@@ -1932,10 +1664,6 @@ function sanitizeStructuredPayload(payload) {
     rig_control: {
       expression_flag: expressionFlag
     },
-    current_expression_state: normalizeExpressionState(safePayload.current_expression_state),
-    assigned_track: String(safePayload.assigned_track || efficiencyTasks[0]?.assigned_track || ""),
-    execution_paradigm: String(safePayload.execution_paradigm || efficiencyTasks[0]?.execution_paradigm || ""),
-    efficiency_tasks: efficiencyTasks,
     generated_blueprint: sessionStage === "STAGE_4_ACTIVE" ? normalizeBlueprint(safePayload.generated_blueprint) : null
   };
 }
@@ -1961,14 +1689,8 @@ function hydrateInterface(payload) {
   executeAoiVoiceEngine(data.character_dialogue);
   updateCharacterRig(data.rig_control.expression_flag);
 
-  if (data.current_expression_state) {
-    switchLayerAssets(data.current_expression_state);
-  }
-
-  const efficiencyBlueprint = createBlueprintFromEfficiencyTasks(data.efficiency_tasks);
-
-  if (data.session_stage === "STAGE_4_ACTIVE" || efficiencyBlueprint) {
-    renderBlueprint(data.generated_blueprint || efficiencyBlueprint);
+  if (data.session_stage === "STAGE_4_ACTIVE") {
+    renderBlueprint(data.generated_blueprint);
   }
 }
 
@@ -2259,7 +1981,6 @@ function sendChatMessageToServer(messageText) {
   });
 
   sendInteraction({
-    user_id: userId,
     message: normalizedMessage,
     session_stage: currentSessionStage,
     transcript: diagnosticTranscript
@@ -2365,326 +2086,14 @@ saveApiKeyButton.addEventListener("click", () => {
   updateApiKeyStatus();
 });
 
-scanButton?.addEventListener("click", sendScan);
+scanSubmit.addEventListener("click", sendScan);
 
-async function fetchUserData() {
-  try {
-    const response = await fetch(`${userDataEndpoint}?user_id=${encodeURIComponent(userId)}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `User-data request failed with status ${response.status}`);
-    }
-
-    const payload = await response.json();
-    hydrateRealtimeData(payload);
-  } catch (error) {
-    console.warn("Could not fetch live user data:", error);
-  }
-}
-
-function hydrateRealtimeData(data) {
-  if (!data || typeof data !== "object") {
-    return;
-  }
-
-  if (academicDetailsField && !academicDetailsField.value && data.profile?.academic_details) {
-    academicDetailsField.value = data.profile.academic_details;
-  }
-
-  if (routineConstraintsField && !routineConstraintsField.value && data.profile?.routine_constraints) {
-    routineConstraintsField.value = data.profile.routine_constraints;
-  }
-
-  if (physicalMetricsField && !physicalMetricsField.value && data.profile?.physical_metrics) {
-    physicalMetricsField.value = data.profile.physical_metrics;
-  }
-
-  if (skincareDietField && !skincareDietField.value && data.profile?.skincare_diet) {
-    skincareDietField.value = data.profile.skincare_diet;
-  }
-
-  if (data.distraction_counts) {
-    updateDistractionCards(data.distraction_counts.daily, data.distraction_counts.weekly, data.distraction_counts.monthly);
-    refreshCalendarOverlay(data.distraction_counts.daily);
-  }
-
-  if (data.goals) {
-    renderGoalsHierarchy(data.goals);
-  }
-
-  if (data.summary?.calendar_text && calendarStatus) {
-    calendarStatus.textContent = data.summary.calendar_text.split("\n")[0] || calendarStatus.textContent;
-  }
-}
-
-function initializeRealtimeSync() {
-  if (!window.EventSource) {
-    fetchUserData();
-    window.setInterval(fetchUserData, 6000);
-    return;
-  }
-
-  try {
-    realtimeEventSource = new EventSource(`${realtimeEndpoint}?user_id=${encodeURIComponent(userId)}`);
-
-    realtimeEventSource.addEventListener("user-data", (event) => {
-      try {
-        hydrateRealtimeData(JSON.parse(event.data));
-      } catch (error) {
-        console.warn("Realtime payload parse failed:", error);
-      }
-    });
-
-    realtimeEventSource.addEventListener("error", (event) => {
-      console.warn("Realtime stream error:", event);
-      if (realtimeEventSource.readyState === EventSource.CLOSED) {
-        fetchUserData();
-      }
-    });
-  } catch (error) {
-    console.warn("Realtime stream initialization failed:", error);
-    fetchUserData();
-    window.setInterval(fetchUserData, 6000);
-  }
-}
-
-function setActivePanel(panelId) {
-  panelButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.panel === panelId);
-  });
-
-  panels.forEach((panel) => {
-    panel.classList.toggle("panel-active", panel.id === panelId);
-  });
-}
-
-function initializePanelNavigation() {
-  panelButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      setActivePanel(button.dataset.panel);
-    });
-  });
-}
-
-async function persistPanelData(type, payload) {
-  try {
-    const response = await fetch("/api/sync", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        type,
-        payload
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.warn("Panel persistence failed:", errorText);
-      return null;
-    }
-
-    const result = await response.json();
-    fetchUserData();
-    return result;
-  } catch (error) {
-    console.warn("Panel persistence error:", error);
-    return null;
-  }
-}
-
-async function saveProfileContext() {
-  if (!profileSyncButton) {
-    return;
-  }
-
-  const payload = {
-    academic_details: academicDetailsField?.value.trim() || "",
-    routine_constraints: routineConstraintsField?.value.trim() || "",
-    physical_metrics: physicalMetricsField?.value.trim() || "",
-    skincare_diet: skincareDietField?.value.trim() || ""
-  };
-
-  await persistPanelData("profile", payload);
-}
-
-function renderPerformanceLogEntries(entries) {
-  if (!performanceLogEntries) {
-    return;
-  }
-
-  performanceLogEntries.innerHTML = entries.length
-    ? entries.map((entry) => `
-      <div class="performance-log-entry">
-        <span>${entry.task}</span>
-        <span>${entry.hours}</span>
-        <span>${entry.rewards}</span>
-      </div>
-    `).join("")
-    : `<div class="performance-log-entry"><span class="empty-state" colspan="3">No performance entries available yet.</span></div>`;
-}
-
-function refreshCalendarOverlay(taskCount) {
-  if (!calendarOverlay || !calendarStatus) {
-    return;
-  }
-
-  if (taskCount >= 2) {
-    calendarOverlay.innerHTML = `<span class="status-badge status-good">✔ ${taskCount} daily tasks logged</span>`;
-    calendarStatus.textContent = "Emerald Mint progress registered for the year matrix.";
-  } else {
-    calendarOverlay.innerHTML = `<span class="status-badge status-alert">✖ ${taskCount} tasks</span>`;
-    calendarStatus.textContent = "Vivid Coral cross status: fewer than two daily tasks completed.";
-  }
-}
-
-function renderCalendarGrid() {
-  if (!pilotCalendarGrid) {
-    return;
-  }
-
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const year = 2026;
-  const today = new Date();
-  pilotCalendarGrid.innerHTML = monthNames.map((name, monthIndex) => {
-    const firstDay = new Date(year, monthIndex, 1).getDay();
-    const offset = firstDay;
-    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const cells = [];
-
-    for (let index = 0; index < offset; index += 1) {
-      cells.push('<div class="calendar-day empty"></div>');
-    }
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const taskCount = Math.floor(Math.random() * 3); // Simulated task count
-      const cellClass = taskCount >= 2 ? "task-complete" : "task-incomplete";
-      cells.push(`<div class="calendar-day ${cellClass}">${day}</div>`);
-    }
-
-    return `<div class="calendar-month"><strong>${name}</strong><div class="calendar-month-grid">${cells.join("")}</div></div>`;
-  }).join("");
-
-  refreshCalendarOverlay(0);
-}
-
-async function logDistractionEntry(event) {
+chatForm.addEventListener("submit", (event) => {
   event.preventDefault();
-
-  const type = distractionTypeInput?.value.trim() || "Unspecified distraction";
-  const date = distractionDateInput?.value || new Date().toISOString().slice(0, 10);
-  const time = distractionTimeInput?.value || "";
-  const duration = distractionDurationInput?.value.trim() || "Unknown";
-  const existingDaily = Number(dailyDistractionCount?.textContent || "0");
-  const existingWeekly = Number(weeklyDistractionCount?.textContent || "0");
-  const existingMonthly = Number(monthlyDistractionCount?.textContent || "0");
-
-  await persistPanelData("distraction", {
-    type,
-    date,
-    time,
-    duration,
-    logged_at: new Date().toISOString()
-  });
-
-  updateDistractionCards(existingDaily + 1, existingWeekly + 1, existingMonthly + 1);
-  refreshCalendarOverlay(existingDaily + 1);
-}
-
-function updateDistractionCards(daily = 0, weekly = 0, monthly = 0) {
-  if (dailyDistractionCount) {
-    dailyDistractionCount.textContent = String(daily);
-  }
-
-  if (weeklyDistractionCount) {
-    weeklyDistractionCount.textContent = String(weekly);
-  }
-
-  if (monthlyDistractionCount) {
-    monthlyDistractionCount.textContent = String(monthly);
-  }
-}
-
-function updateGoalTrackerPanel(blueprint) {
-  if (!blueprint || !dailyTargetCircle || !midTermTargetCircle || !endGoalCircle) {
-    return;
-  }
-
-  const dailyPercent = Math.min(100, blueprint.goals_hierarchy.daily_routines.length * 25);
-  const midPercent = Math.min(100, blueprint.goals_hierarchy.mid_term.length * 28);
-  const longPercent = Math.min(100, blueprint.goals_hierarchy.long_term.length * 33);
-
-  dailyTargetCircle.querySelector(".metric-value").textContent = `${dailyPercent}%`;
-  midTermTargetCircle.querySelector(".metric-value").textContent = `${midPercent}%`;
-  endGoalCircle.querySelector(".metric-value").textContent = `${longPercent}%`;
-
-  const entries = blueprint.time_blocks.slice(0, 4).map((block) => ({
-    task: block.label,
-    hours: block.hardware_timer?.duration_string || block.time_window,
-    rewards: block.type.replace(/_/g, " ")
-  }));
-
-  renderPerformanceLogEntries(entries);
-  syncGoalTrackerMetrics(blueprint.goals_hierarchy);
-}
-
-async function syncGoalTrackerMetrics(goalsHierarchy) {
-  if (!goalsHierarchy) {
-    return;
-  }
-
-  await persistPanelData("goals", {
-    long_term: goalsHierarchy.long_term || [],
-    mid_term: goalsHierarchy.mid_term || [],
-    daily_routines: goalsHierarchy.daily_routines || [],
-    synced_at: new Date().toISOString()
-  });
-}
-
-function dispatchChatInput() {
-  const messageText = chatUserInput?.value || "";
-
-  if (chatUserInput) {
-    chatUserInput.value = "";
-  }
-
+  const messageText = chatInput.value;
+  chatInput.value = "";
   sendChatMessageToServer(messageText);
-}
-
-function setMicrophoneActive(isActive) {
-  isListening = isActive;
-  interfaceContainer?.classList.toggle("voice-active", isActive);
-  chatMicBtn?.classList.toggle("active-recording", isActive);
-  chatMicBtn?.setAttribute("aria-pressed", String(isActive));
-}
-
-chatSendBtn?.addEventListener("click", dispatchChatInput);
-
-chatUserInput?.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter") {
-    return;
-  }
-
-  event.preventDefault();
-  dispatchChatInput();
 });
-
-if (profileSyncButton) {
-  profileSyncButton.addEventListener("click", saveProfileContext);
-}
-
-if (distractionForm) {
-  distractionForm.addEventListener("submit", logDistractionEntry);
-}
-
-initializePanelNavigation();
-renderCalendarGrid();
-updateDistractionCards(0, 0, 0);
-fetchUserData();
-initializeRealtimeSync();
 
 if (voiceInputEngine) {
   voiceInputEngine.continuous = false;
@@ -2692,19 +2101,16 @@ if (voiceInputEngine) {
   voiceInputEngine.lang = "en-US";
 
   voiceInputEngine.onstart = () => {
-    setMicrophoneActive(true);
+    isListening = true;
+    interfaceContainer.classList.add("voice-active");
+    micToggleButton.setAttribute("aria-pressed", "true");
     window.speechSynthesis.cancel();
   };
 
   voiceInputEngine.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
-    if (chatUserInput) {
-      chatUserInput.value = transcript;
-    }
+    chatInput.value = transcript;
     sendChatMessageToServer(transcript);
-    if (chatUserInput) {
-      chatUserInput.value = "";
-    }
   };
 
   voiceInputEngine.onerror = (event) => {
@@ -2713,27 +2119,22 @@ if (voiceInputEngine) {
   };
 
   voiceInputEngine.onend = () => {
-    setMicrophoneActive(false);
+    isListening = false;
+    interfaceContainer.classList.remove("voice-active");
+    micToggleButton.setAttribute("aria-pressed", "false");
   };
 
-  chatMicBtn?.addEventListener("click", () => {
+  micToggleButton.addEventListener("click", () => {
     if (isListening) {
-      setMicrophoneActive(false);
       voiceInputEngine.stop();
       return;
     }
 
-    try {
-      setMicrophoneActive(true);
-      voiceInputEngine.start();
-    } catch (error) {
-      console.error("Voice input engine start failed:", error);
-      setMicrophoneActive(false);
-    }
+    voiceInputEngine.start();
   });
-} else if (chatMicBtn) {
-  chatMicBtn.disabled = true;
-  chatMicBtn.setAttribute("aria-disabled", "true");
+} else {
+  micToggleButton.disabled = true;
+  micToggleButton.setAttribute("aria-disabled", "true");
 }
 
 startCharacterRigRenderer();

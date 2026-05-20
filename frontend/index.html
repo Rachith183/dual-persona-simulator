@@ -3,168 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character HUD Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="layer-animations.css">
+    <title>Character HUD System</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <!-- Top Navigation Header Bar -->
-    <header id="top-header-bar">
-        <button id="sidebar-toggle-btn" class="hamburger-btn">☰</button>
-        <h1 class="dashboard-title">Character HUD System</h1>
+    <!-- STICKY HEADER NAVIGATION BAR -->
+    <header id="app-header-bar">
+        <button id="hamburger-menu-trigger" class="hud-icon-btn">☰</button>
+        <div class="header-branding">
+            <h1>Character HUD</h1>
+        </div>
     </header>
 
-    <!-- Collapsible Left Sidebar Wrapper -->
-    <aside id="app-sidebar">
+    <!-- ABSOLUTE COLLAPSIBLE NAVIGATION DRAWER -->
+    <aside id="app-sidebar-drawer">
         <nav class="sidebar-nav">
             <ul class="nav-list">
-                <li class="nav-item" data-panel="panel-ch-core">
-                    <button class="nav-btn">CH Core</button>
-                </li>
-                <li class="nav-item" data-panel="panel-goal-tracker">
-                    <button class="nav-btn">Goal Tracker</button>
-                </li>
-                <li class="nav-item" data-panel="panel-calendar">
-                    <button class="nav-btn">Calendar</button>
-                </li>
-                <li class="nav-item" data-panel="panel-distraction">
-                    <button class="nav-btn">Distraction Tracker</button>
-                </li>
-                <li class="nav-item" data-panel="panel-profile">
-                    <button class="nav-btn">User Profile Context</button>
-                </li>
+                <li class="nav-item"><button class="nav-link" data-route="ch-core">CH Core</button></li>
+                <li class="nav-item"><button class="nav-link" data-route="goal-tracker">Goal Tracker</button></li>
+                <li class="nav-item"><button class="nav-link" data-route="calendar">Calendar</button></li>
+                <li class="nav-item"><button class="nav-link" data-route="distraction">Distraction Tracker</button></li>
+                <li class="nav-item"><button class="nav-link" data-route="profile">User Profile Context</button></li>
             </ul>
         </nav>
     </aside>
 
-    <!-- Main Content Viewport Wrapper -->
-    <main id="main-content">
-        <!-- Panel 1: CH Core -->
-        <section id="panel-ch-core" class="app-panel active">
-            <div class="panel-header">
-                <h2>CH Core</h2>
-            </div>
-            <div class="panel-content monochrome-panel">
-                <div class="character-core-wrapper">
-                    <div id="character-animation-layer" class="character-layer">
-                        <div class="layer-container">
-                            <!-- Base Layer -->
-                            <div class="character-sprite layer-base"></div>
-                            
-                            <!-- Expression Layers -->
-                            <div class="character-sprite layer-eye-left"></div>
-                            <div class="character-sprite layer-eye-right"></div>
-                            <div class="character-sprite layer-mouth"></div>
-                            
-                            <!-- Accessory Layers -->
-                            <div class="character-sprite layer-hair-back"></div>
-                            <div class="character-sprite layer-hair-strand"></div>
-                            <div class="character-sprite layer-bang"></div>
-                        </div>
+    <!-- MAIN CONTENT VIEWPORT -->
+    <main class="app-main-content">
+        <!-- PANEL: CHARACTER AI -->
+        <section id="panel-character-ai" class="content-panel active-panel">
+            <div class="chat-container">
+                <div id="chat-history-log" class="chat-history-viewport">
+                    <div class="chat-message system-message">
+                        <p>Welcome to Character HUD. Type a message to start.</p>
                     </div>
-                    
-                    <div class="character-controls">
-                        <div class="control-group">
-                            <h3>Expression Controls</h3>
-                            <button class="expr-btn" data-expr="smiling">Smiling</button>
-                            <button class="expr-btn" data-expr="angry">Angry</button>
-                            <button class="expr-btn" data-expr="thinking">Thinking</button>
-                            <button class="expr-btn" data-expr="focused">Focused</button>
-                            <button class="expr-btn" data-expr="surprised">Surprised</button>
-                            <button class="expr-btn" data-expr="neutral">Neutral</button>
-                        </div>
-                        
-                        <div class="control-group">
-                            <h3>Reaction Test</h3>
-                            <button class="reaction-btn" data-reaction="happy">😄 Happy</button>
-                            <button class="reaction-btn" data-reaction="sad">😢 Sad</button>
-                            <button class="reaction-btn" data-reaction="confused">🤔 Confused</button>
-                            <button class="reaction-btn" data-reaction="excited">🎉 Excited</button>
-                        </div>
-                    </div>
+                </div>
+                <div id="chat-input-dock" class="chat-input-dock">
+                    <input 
+                        id="chat-user-input" 
+                        type="text" 
+                        placeholder="Message..." 
+                        class="chat-input-field"
+                    >
+                    <button id="chat-mic-btn" class="chat-action-btn">🎙️</button>
+                    <button id="chat-send-btn" class="chat-action-btn">➔</button>
                 </div>
             </div>
         </section>
 
-        <!-- Panel 2: Goal Tracker -->
-        <section id="panel-goal-tracker" class="app-panel hidden">
-            <div class="panel-header">
-                <h2>Goal Tracker</h2>
-            </div>
-            <div class="panel-content">
-                <div class="goals-container">
-                    <div class="goal-section">
-                        <h3>Long-term Goals</h3>
-                        <ul id="long-term-goals-list"></ul>
-                    </div>
-                    <div class="goal-section">
-                        <h3>Mid-term Goals</h3>
-                        <ul id="mid-term-goals-list"></ul>
-                    </div>
-                    <div class="goal-section">
-                        <h3>Daily Targets</h3>
-                        <ul id="daily-targets-list"></ul>
-                    </div>
+        <!-- PANEL: CALENDAR -->
+        <section id="panel-calendar" class="content-panel">
+            <div class="calendar-wrapper">
+                <div class="calendar-header">
+                    <button id="calendar-prev-month" class="calendar-nav-btn">◀</button>
+                    <h3 id="calendar-month-year" class="calendar-month-display">May 2026</h3>
+                    <button id="calendar-next-month" class="calendar-nav-btn">▶</button>
                 </div>
+                <div id="calendar-days-matrix" class="calendar-grid"></div>
             </div>
         </section>
 
-        <!-- Panel 3: Compressed Calendar Sheet -->
-        <section id="panel-calendar" class="app-panel hidden">
-            <div class="panel-header">
-                <h2>Calendar</h2>
-                <div class="calendar-month-display" id="calendar-month-display">May 2026</div>
-            </div>
-            <div class="panel-content">
-                <div class="calendar-controls">
-                    <button id="prev-month-btn" class="calendar-nav-btn">◀ Previous</button>
-                    <button id="next-month-btn" class="calendar-nav-btn">Next ▶</button>
-                </div>
-                <div id="calendar-grid" class="calendar-grid-wrapper">
-                    <!-- Calendar days will be generated here -->
-                </div>
-            </div>
+        <!-- PANEL: GOAL TRACKER -->
+        <section id="panel-goal-tracker" class="content-panel">
+            <h2>Goal Tracker</h2>
+            <p>Goal tracking panel content</p>
         </section>
 
-        <!-- Panel 4: Distraction Tracker -->
-        <section id="panel-distraction" class="app-panel hidden">
-            <div class="panel-header">
-                <h2>Distraction Tracker</h2>
-            </div>
-            <div class="panel-content">
-                <div class="distraction-metrics">
-                    <p>Track interruptions and focus sessions</p>
-                </div>
-            </div>
+        <!-- PANEL: DISTRACTION TRACKER -->
+        <section id="panel-distraction" class="content-panel">
+            <h2>Distraction Tracker</h2>
+            <p>Distraction tracking panel content</p>
         </section>
 
-        <!-- Panel 5: User Profile Context -->
-        <section id="panel-profile" class="app-panel hidden">
-            <div class="panel-header">
-                <h2>User Profile Context</h2>
-            </div>
-            <div class="panel-content">
-                <div class="profile-details">
-                    <div class="profile-field">
-                        <label>Academic Details:</label>
-                        <p id="academic-info">Not set</p>
-                    </div>
-                    <div class="profile-field">
-                        <label>Routine Constraints:</label>
-                        <p id="routine-info">Not set</p>
-                    </div>
-                    <div class="profile-field">
-                        <label>Physical Metrics:</label>
-                        <p id="metrics-info">Not set</p>
-                    </div>
-                </div>
-            </div>
+        <!-- PANEL: USER PROFILE -->
+        <section id="panel-profile" class="content-panel">
+            <h2>User Profile Context</h2>
+            <p>User profile panel content</p>
         </section>
     </main>
 
-    <!-- Scripts in order of dependency -->
     <script src="config.js"></script>
-    <script src="layer-animator.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
